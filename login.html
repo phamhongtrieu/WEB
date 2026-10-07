@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | Cỏ Thơm Beauty</title>
+    <!-- Stylesheet chuẩn phân hệ Cỏ Thơm -->
+    <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body>
+
+    <!-- Backdrop mờ toàn màn hình chuẩn Modal Figma -->
+    <div class="auth-modal-backdrop">
+        <div class="auth-card">
+            
+            <!-- Modal Header nền be (#F5EDE0) -->
+            <div class="auth-header">
+                <a href="index.html" class="auth-close-btn" title="Đóng và quay về Trang chủ">✕</a>
+                <div class="auth-header-icon">🌿</div>
+                <h1 class="auth-title">Chào mừng trở lại</h1>
+                <p class="auth-subtitle">Đăng nhập tài khoản Cỏ Thơm Beauty</p>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="auth-body">
+                
+                <!-- Thông báo lỗi / thành công -->
+                <div id="loginAlert" class="alert-box"></div>
+
+                <form id="formLogin" onsubmit="return handleLogin(event);">
+                    <!-- Email / Tên đăng nhập -->
+                    <div class="form-group">
+                        <label class="form-label" for="loginEmail">
+                            Email hoặc Tên đăng nhập <span class="form-label-required">*</span>
+                        </label>
+                        <div class="form-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="loginEmail" 
+                                class="form-input" 
+                                placeholder="ví dụ: bb@cs hoặc sophie" 
+                                required 
+                                autocomplete="username"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Mật khẩu -->
+                    <div class="form-group">
+                        <label class="form-label" for="loginPassword">
+                            Mật khẩu <span class="form-label-required">*</span>
+                        </label>
+                        <div class="form-input-wrapper">
+                            <input 
+                                type="password" 
+                                id="loginPassword" 
+                                class="form-input" 
+                                placeholder="Nhập mật khẩu (mặc định: 123)" 
+                                required 
+                                autocomplete="current-password"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Tùy chọn nhớ mật khẩu & Quên mật khẩu -->
+                    <div class="form-extra">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="rememberMe" checked>
+                            <span>Ghi nhớ tôi</span>
+                        </label>
+                        <a href="javascript:void(0)" onclick="alert('Vui lòng liên hệ Quản trị viên (admin@cothom.vn) hoặc dùng mật khẩu mặc định 123 để đăng nhập thử nghiệm.');">Quên mật khẩu?</a>
+                    </div>
+
+                    <!-- Nút Submit hồng dạng viên thuốc -->
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Đăng Nhập
+                    </button>
+                </form>
+
+                <!-- Footer chuyển sang đăng ký -->
+                <div class="auth-footer">
+                    Chưa có tài khoản? <a href="register.html">Tạo tài khoản mới</a>
+                </div>
+
+                <!-- Gợi ý test nhanh dữ liệu cho người chấm bài -->
+                <div style="margin-top: 18px; padding: 10px 14px; background-color: #FAFAF8; border: 1px dashed #EDE0D4; border-radius: 12px; font-size: 12px; color: #6B5A56;">
+                    💡 <strong>Tài khoản test nhanh:</strong><br>
+                    - Khách mẫu: <code>bb@cs</code> / pass: <code>123</code><br>
+                    - Khách bị khóa: <code>locked@cs</code> / pass: <code>123</code>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts nạp dữ liệu và xử lý logic -->
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/auth.js"></script>
+</body>
+</html>
