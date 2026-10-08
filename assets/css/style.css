@@ -1,0 +1,1016 @@
+/* ==========================================================================
+   CỎ THƠM BEAUTY - STYLESHEET TRANG CHỦ (MÔN LẬP TRÌNH WEB CƠ BẢN)
+   --------------------------------------------------------------------------
+   LƯU Ý QUAN TRỌNG:
+   - Không sử dụng CSS Variables (:root, var(--...)).
+   - Trực tiếp áp dụng mã màu và font chữ chuẩn thương hiệu:
+     * Màu chủ đạo (Hồng đất): #C4788A (hover: #B06577)
+     * Màu chữ chính (Nâu đậm): #2C2320
+     * Màu chữ phụ: #5C4E4B và #8E7D7A
+     * Màu nền be nhạt: #F5EDE0
+     * Màu nền phụ (Blush): #FAF4F0
+     * Màu nền toàn trang: #FAFAF8
+     * Viền (Border): #E8E2D9
+     * Font tiêu đề: 'Playfair Display', Georgia, serif
+     * Font nội dung: 'Plus Jakarta Sans', sans-serif
+   ========================================================================== */
+
+/* --- 1. RESET VÀ THIẾT LẬP CƠ BẢN --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #FAFAF8;
+    color: #2C2320;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+button, input {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    outline: none;
+    border: none;
+}
+
+.container {
+    width: 1200px;
+    max-width: 92%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.clearfix::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Tiêu đề chung */
+.section-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.section-subtitle {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #C4788A;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.section-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 34px;
+    color: #2C2320;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+/* Nút bấm tổng quát */
+.btn {
+    display: inline-block;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #C4788A;
+    color: #FFFFFF;
+    border: 1px solid #C4788A;
+}
+
+.btn-primary:hover {
+    background-color: #B06577;
+    border-color: #B06577;
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: #2C2320;
+    border: 1px solid #2C2320;
+}
+
+.btn-outline:hover {
+    background-color: #2C2320;
+    color: #FFFFFF;
+}
+
+.btn-white {
+    background-color: #FFFFFF;
+    color: #2C2320;
+    border: 1px solid #FFFFFF;
+}
+
+.btn-white:hover {
+    background-color: #F5EDE0;
+    color: #2C2320;
+}
+
+/* --- 2. THANH THÔNG BÁO (TOP BAR) --- */
+.top-bar {
+    background-color: #C4788A;
+    color: #FFFFFF;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 9px 16px;
+}
+
+/* --- 3. HEADER & MENU ĐIỀU HƯỚNG --- */
+.site-header {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E8E2D9;
+    position: relative;
+    z-index: 100;
+}
+
+.header-inner {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.site-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.logo-leaf {
+    font-size: 24px;
+    margin-right: 8px;
+}
+
+.logo-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #2C2320;
+}
+
+.main-navigation .nav-list {
+    display: flex;
+    gap: 28px;
+}
+
+.nav-link {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: #2C2320;
+    padding: 8px 0;
+    position: relative;
+}
+
+.nav-link:hover {
+    color: #C4788A;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    height: 2px;
+    background-color: #C4788A;
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #FAF4F0;
+    color: #2C2320;
+    font-size: 16px;
+    border: 1px solid #E8E2D9;
+}
+
+.header-action-btn:hover {
+    background-color: #C4788A;
+    color: #FFFFFF;
+    border-color: #C4788A;
+}
+
+.cart-btn-wrapper {
+    position: relative;
+}
+
+.cart-count-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background-color: #C4788A;
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 700;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #FFFFFF;
+}
+
+/* --- 4. HERO BANNER SLIDER --- */
+.hero-slider-section {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    overflow: hidden;
+    background-color: #2C2320;
+}
+
+.slider-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.slide-item {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+.slide-item.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.slide-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(44, 35, 32, 0.78) 0%, rgba(44, 35, 32, 0.45) 55%, rgba(44, 35, 32, 0.15) 100%);
+}
+
+.slide-content-wrap {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 580px;
+}
+
+.slide-badge {
+    display: inline-block;
+    align-self: flex-start;
+    padding: 6px 14px;
+    background-color: rgba(196, 120, 138, 0.9);
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 20px;
+    margin-bottom: 18px;
+}
+
+.slide-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 52px;
+    color: #FFFFFF;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 18px;
+    white-space: pre-line;
+}
+
+.slide-desc {
+    font-size: 16px;
+    color: #E8E2D9;
+    line-height: 1.7;
+    margin-bottom: 28px;
+}
+
+/* Dots điều hướng slider */
+.slider-dots {
+    position: absolute;
+    bottom: 28px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    z-index: 10;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.45);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    padding: 0;
+}
+
+.dot.active {
+    background-color: #C4788A;
+    width: 32px;
+    border-radius: 10px;
+}
+
+/* --- 5. DẢI CAM KẾT THƯƠNG HIỆU (BRAND STRIP) --- */
+.brand-strip-section {
+    background-color: #F5EDE0;
+    border-top: 1px solid #E8E2D9;
+    border-bottom: 1px solid #E8E2D9;
+    padding: 38px 0;
+}
+
+.brand-features-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    padding: 0 16px;
+    border-right: 1px solid #E8E2D9;
+}
+
+.brand-feature-item:last-child {
+    border-right: none;
+}
+
+.feature-icon-box {
+    width: 48px;
+    height: 48px;
+    background-color: #FFFFFF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #C4788A;
+    border: 1px solid #E8E2D9;
+    flex-shrink: 0;
+}
+
+.feature-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #2C2320;
+    margin-bottom: 3px;
+}
+
+.feature-subtitle {
+    font-size: 13px;
+    color: #5C4E4B;
+}
+
+/* --- 6. DANH MỤC NỔI BẬT (MUA THEO DANH MỤC) --- */
+.categories-section {
+    padding: 70px 0;
+}
+
+.categories-grid {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+.category-card {
+    flex: 1;
+    background-color: #FFFFFF;
+    border: 1px solid #E8E2D9;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.category-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 25px rgba(44, 35, 32, 0.08);
+}
+
+.category-image-wrap {
+    height: 220px;
+    overflow: hidden;
+    position: relative;
+}
+
+.category-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.category-card:hover .category-image-wrap img {
+    transform: scale(1.08);
+}
+
+.category-tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #C4788A;
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 2;
+}
+
+.category-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 18px;
+    color: #2C2320;
+    padding: 16px 12px;
+    font-weight: 600;
+    display: block;
+}
+
+.category-card:hover .category-name {
+    color: #C4788A;
+}
+
+/* --- 7. SẢN PHẨM NỔI BẬT (LỰA CHỌN CỦA BIÊN TẬP VIÊN) --- */
+.featured-products-section {
+    background-color: #FAF4F0;
+    padding: 75px 0;
+    border-top: 1px solid #E8E2D9;
+    border-bottom: 1px solid #E8E2D9;
+}
+
+.products-grid {
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+}
+
+.product-card {
+    flex: 1;
+    background-color: #FFFFFF;
+    border: 1px solid #E8E2D9;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 30px rgba(44, 35, 32, 0.09);
+}
+
+.product-img-box {
+    position: relative;
+    height: 270px;
+    overflow: hidden;
+    background-color: #FAFAF8;
+}
+
+.product-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.product-card:hover .product-img-box img {
+    transform: scale(1.06);
+}
+
+.badge-group {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 2;
+}
+
+.product-badge {
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.badge-discount {
+    background-color: #C4788A;
+    color: #FFFFFF;
+}
+
+.badge-stock {
+    background-color: #2C2320;
+    color: #FFFFFF;
+}
+
+.product-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.product-rating {
+    color: #D99B4B;
+    font-size: 13px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.product-rating-count {
+    color: #8E7D7A;
+    font-size: 12px;
+}
+
+.product-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2C2320;
+    margin-bottom: 12px;
+    line-height: 1.35;
+    min-height: 48px;
+}
+
+.product-title a:hover {
+    color: #C4788A;
+}
+
+.product-pricing {
+    margin-bottom: 18px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.current-price {
+    font-size: 19px;
+    font-weight: 700;
+    color: #C4788A;
+}
+
+.old-price {
+    font-size: 14px;
+    color: #8E7D7A;
+    text-decoration: line-through;
+}
+
+.btn-add-cart {
+    margin-top: auto;
+    width: 100%;
+    padding: 10px 16px;
+    background-color: #FAF4F0;
+    color: #2C2320;
+    border: 1px solid #E8E2D9;
+    border-radius: 25px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-add-cart:hover {
+    background-color: #C4788A;
+    color: #FFFFFF;
+    border-color: #C4788A;
+}
+
+/* --- 8. KHỐI EDITORIAL BANNER --- */
+.editorial-section {
+    padding: 75px 0;
+}
+
+.editorial-grid {
+    display: flex;
+    gap: 24px;
+}
+
+.editorial-large {
+    flex: 1.4;
+    position: relative;
+    min-height: 460px;
+    border-radius: 16px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+}
+
+.editorial-side-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.editorial-small {
+    flex: 1;
+    position: relative;
+    min-height: 218px;
+    border-radius: 16px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+}
+
+.editorial-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(44, 35, 32, 0.05) 30%, rgba(44, 35, 32, 0.85) 100%);
+    z-index: 1;
+}
+
+.editorial-content {
+    position: relative;
+    z-index: 2;
+    padding: 30px;
+    color: #FFFFFF;
+}
+
+.editorial-subtitle {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #FAF4F0;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.editorial-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+    line-height: 1.25;
+}
+
+.editorial-small .editorial-title {
+    font-size: 21px;
+    margin-bottom: 10px;
+}
+
+.editorial-desc {
+    font-size: 14.5px;
+    color: #E8E2D9;
+    margin-bottom: 20px;
+    max-width: 440px;
+    line-height: 1.6;
+}
+
+.editorial-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #C4788A;
+    padding-bottom: 3px;
+}
+
+.editorial-link:hover {
+    color: #FAF4F0;
+    border-color: #FFFFFF;
+}
+
+/* --- 9. ĐÁNH GIÁ KHÁCH HÀNG (TESTIMONIALS) --- */
+.testimonials-section {
+    background-color: #F5EDE0;
+    padding: 75px 0;
+    border-top: 1px solid #E8E2D9;
+    border-bottom: 1px solid #E8E2D9;
+}
+
+.testimonials-grid {
+    display: flex;
+    gap: 24px;
+}
+
+.testimonial-card {
+    flex: 1;
+    background-color: #FFFFFF;
+    border: 1px solid #E8E2D9;
+    border-radius: 14px;
+    padding: 32px 26px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.3s ease;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-4px);
+}
+
+.testimonial-stars {
+    color: #D99B4B;
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.testimonial-quote {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 16px;
+    font-style: italic;
+    color: #2C2320;
+    line-height: 1.65;
+    margin-bottom: 22px;
+}
+
+.testimonial-author-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-top: 1px solid #FAF4F0;
+    padding-top: 16px;
+}
+
+.testimonial-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #C4788A;
+}
+
+.author-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #2C2320;
+    margin-bottom: 2px;
+}
+
+.author-badge {
+    font-size: 12.5px;
+    color: #5C4E4B;
+}
+
+/* --- 10. FOOTER CHÂN TRANG --- */
+.site-footer {
+    background-color: #211B19;
+    color: #E8E2D9;
+    padding-top: 70px;
+    padding-bottom: 30px;
+}
+
+.footer-top-grid {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 50px;
+}
+
+.footer-col-brand {
+    flex: 1.3;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.footer-logo .logo-leaf {
+    font-size: 24px;
+    margin-right: 8px;
+}
+
+.footer-logo .logo-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #FFFFFF;
+}
+
+.footer-desc {
+    font-size: 14px;
+    color: #8E7D7A;
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+.social-links {
+    display: flex;
+    gap: 12px;
+}
+
+.social-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #2C2320;
+    color: #E8E2D9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #5C4E4B;
+    font-size: 14px;
+    transition: all 0.25s ease;
+}
+
+.social-icon-btn:hover {
+    background-color: #C4788A;
+    border-color: #C4788A;
+    color: #FFFFFF;
+}
+
+.footer-col-nav {
+    flex: 0.9;
+}
+
+.footer-col-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 17px;
+    color: #FFFFFF;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.footer-links-list li {
+    margin-bottom: 12px;
+}
+
+.footer-links-list a {
+    color: #8E7D7A;
+    font-size: 14px;
+}
+
+.footer-links-list a:hover {
+    color: #C4788A;
+    padding-left: 4px;
+}
+
+.footer-col-newsletter {
+    flex: 1.4;
+}
+
+.newsletter-form {
+    margin-top: 15px;
+}
+
+.newsletter-input-group {
+    display: flex;
+    background-color: #2C2320;
+    border: 1px solid #5C4E4B;
+    border-radius: 30px;
+    padding: 4px 6px 4px 18px;
+    margin-bottom: 10px;
+}
+
+.newsletter-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 13.5px;
+}
+
+.newsletter-input::placeholder {
+    color: #8E7D7A;
+}
+
+.newsletter-submit-btn {
+    background-color: #C4788A;
+    color: #FFFFFF;
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+}
+
+.newsletter-submit-btn:hover {
+    background-color: #B06577;
+}
+
+.newsletter-note {
+    font-size: 12px;
+    color: #8E7D7A;
+}
+
+.footer-bottom {
+    border-top: 1px solid #2C2320;
+    padding-top: 25px;
+    text-align: center;
+    font-size: 13px;
+    color: #8E7D7A;
+}
+
+/* --- 11. BẢN THIẾT KẾ PHẢN HỒI CƠ BẢN (RESPONSIVE) --- */
+@media (max-width: 992px) {
+    .header-inner {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 15px 0;
+        gap: 15px;
+    }
+    .brand-features-grid,
+    .categories-grid,
+    .products-grid,
+    .testimonials-grid,
+    .editorial-grid,
+    .footer-top-grid {
+        flex-direction: column;
+    }
+    .brand-feature-item {
+        border-right: none;
+        border-bottom: 1px solid #E8E2D9;
+        padding: 12px 0;
+    }
+    .brand-feature-item:last-child {
+        border-bottom: none;
+    }
+    .editorial-large,
+    .editorial-small {
+        min-height: 320px;
+    }
+    .hero-slider-section {
+        height: 500px;
+    }
+    .slide-title {
+        font-size: 38px;
+    }
+}
