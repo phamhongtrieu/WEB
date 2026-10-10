@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tài khoản cá nhân, xác thực và quản lý đơn hàng - Cỏ Thơm Beauty">
+    <title>Tài Khoản & Đơn Hàng | Cỏ Thơm Beauty</title>
+
+    <!-- Google Fonts: Playfair Display (tiêu đề) và Plus Jakarta Sans (nội dung) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheet ngoài: Chuẩn mã nguồn sạch, không dùng thẻ <style> nội tuyến -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body>
+
+    <!-- 1. TOP BAR THÔNG BÁO -->
+    <div class="top-bar">
+        MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TRÊN £60 · DÙNG MÃ GLOW20 GIẢM 20%
+    </div>
+
+    <!-- 2. SITE HEADER -->
+    <header class="site-header">
+        <div class="container">
+            <div class="header-inner">
+                <!-- Logo thương hiệu -->
+                <a href="index.html" class="site-logo">
+                    <span class="logo-leaf">🌿</span>
+                    <span class="logo-name">CỎ THƠM</span>
+                </a>
+
+                <!-- Thanh menu điều hướng chính -->
+                <nav class="main-navigation">
+                    <ul class="nav-list">
+                        <li><a href="index.html" class="nav-link">Trang chủ</a></li>
+                        <li><a href="cart.html" class="nav-link">Giỏ hàng</a></li>
+                        <li><a href="account.html" class="nav-link active">Tài khoản</a></li>
+                        <li><a href="admin.html" class="nav-link">Quản trị</a></li>
+                    </ul>
+                </nav>
+
+                <!-- Cụm chức năng góc phải -->
+                <div class="header-actions">
+                    <a href="cart.html" class="user-quick-btn">
+                        <span>🛍️</span> Giỏ hàng
+                    </a>
+                    <!-- Cụm Dropdown User tự động render từ auth.js -->
+                    <div class="header-user-wrapper" id="headerUserWrapper"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. BREADCRUMB ĐIỀU HƯỚNG -->
+    <div class="breadcrumb-section">
+        <div class="breadcrumb-container">
+            <a href="index.html">Trang chủ</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current" id="breadcrumbTitle">Tài khoản & Đơn hàng</span>
+        </div>
+    </div>
+
+    <!-- 4. KHU VỰC NỘI DUNG CHÍNH (ACCOUNT CONTAINER) -->
+    <main class="account-container">
+
+        <!-- ================================================================== -->
+        <!-- PHẦN A: KHÁCH CHƯA ĐĂNG NHẬP (FORM ĐĂNG NHẬP / ĐĂNG KÝ)           -->
+        <!-- ================================================================== -->
+        <section id="accountAuthSection" class="account-view-section">
+            <div class="account-auth-container">
+                <div class="auth-card account-auth-card">
+                    
+                    <!-- Header Card -->
+                    <div class="auth-header">
+                        <div class="auth-header-icon">🌿</div>
+                        <h1 class="auth-title" id="authSectionTitle">Chào mừng đến với Cỏ Thơm</h1>
+                        <p class="auth-subtitle" id="authSectionSubtitle">Đăng nhập hoặc đăng ký tài khoản để tiếp tục</p>
+                    </div>
+
+                    <!-- Body Card chứa Form -->
+                    <div class="auth-body">
+                        <!-- Thanh chuyển Tab Đăng nhập / Đăng ký trực quan bằng onclick -->
+                        <div class="auth-view-tab-nav">
+                            <button type="button" id="tabBtnLoginMode" class="auth-view-tab-btn active" onclick="switchAuthMode('login');">
+                                🔑 Đăng Nhập
+                            </button>
+                            <button type="button" id="tabBtnRegisterMode" class="auth-view-tab-btn" onclick="switchAuthMode('register');">
+                                🌸 Đăng Ký Mới
+                            </button>
+                        </div>
+
+                        <!-- ----------------- FORM 1: ĐĂNG NHẬP ----------------- -->
+                        <div id="authLoginFormWrapper">
+                            <div id="loginAlert" class="alert-box"></div>
+
+                            <form id="formAccountLogin" onsubmit="return handleLogin(event);">
+                                <div class="form-group">
+                                    <label class="form-label" for="loginEmail">
+                                        Email hoặc Tên đăng nhập <span class="form-label-required">*</span>
+                                    </label>
+                                    <div class="form-input-wrapper">
+                                        <input 
+                                            type="text" 
+                                            id="loginEmail" 
+                                            class="form-input" 
+                                            placeholder="ví dụ: bb@cs hoặc sophie" 
+                                            required 
+                                            autocomplete="username"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="loginPassword">
+                                        Mật khẩu <span class="form-label-required">*</span>
+                                    </label>
+                                    <div class="form-input-wrapper">
+                                        <input 
+                                            type="password" 
+                                            id="loginPassword" 
+                                            class="form-input" 
+                                            placeholder="Nhập mật khẩu (mặc định: 123)" 
+                                            required 
+                                            autocomplete="current-password"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="form-extra">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="rememberMe" checked>
+                                        <span>Ghi nhớ phiên đăng nhập</span>
+                                    </label>
+                                    <a href="javascript:void(0)" onclick="alert('Gợi ý đồ án: Hãy dùng mật khẩu mặc định 123 để đăng nhập thử nghiệm hoặc liên hệ Quản trị viên (admin@cothom.vn).');">
+                                        Quên mật khẩu?
+                                    </a>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    Đăng Nhập Ngay
+                                </button>
+                            </form>
+
+                            <div class="auth-footer">
+                                Chưa có tài khoản? 
+                                <a href="javascript:void(0)" onclick="switchAuthMode('register');">Tạo tài khoản mới</a>
+                            </div>
+
+                            <!-- Hộp gợi ý test nhanh cho giảng viên/người chấm -->
+                            <div class="auth-demo-hint">
+                                💡 <strong>Tài khoản có sẵn trong hệ thống:</strong><br>
+                                • Khách hàng mẫu: <code>bb@cs</code> / Mật khẩu: <code>123</code><br>
+                                • Khách bị khóa kiểm thử: <code>locked@cs</code> / Mật khẩu: <code>123</code><br>
+                                • Quản trị viên: <code>admin</code> / Mật khẩu: <code>123</code>
+                            </div>
+                        </div>
+
+                        <!-- ----------------- FORM 2: ĐĂNG KÝ ----------------- -->
+                        <div id="authRegisterFormWrapper" class="auth-form-hidden">
+                            <div id="registerAlert" class="alert-box"></div>
+
+                            <form id="formAccountRegister" onsubmit="return handleRegister(event);">
+                                <div class="form-group">
+                                    <label class="form-label" for="regName">
+                                        Họ và tên <span class="form-label-required">*</span>
+                                    </label>
+                                    <div class="form-input-wrapper">
+                                        <input 
+                                            type="text" 
+                                            id="regName" 
+                                            class="form-input" 
+                                            placeholder="ví dụ: Nguyễn Thu Thảo" 
+                                            required 
+                                            autocomplete="name"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="form-row-2">
+                                    <div class="form-group">
+                                        <label class="form-label" for="regEmail">
+                                            Email <span class="form-label-required">*</span>
+                                        </label>
+                                        <div class="form-input-wrapper">
+                                            <input 
+                                                type="email" 
+                                                id="regEmail" 
+                                                class="form-input" 
+                                                placeholder="thao@example.com" 
+                                                required 
+                                                autocomplete="email"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="regPhone">
+                                            Số điện thoại <span class="form-label-required">*</span>
+                                        </label>
+                                        <div class="form-input-wrapper">
+                                            <input 
+                                                type="tel" 
+                                                id="regPhone" 
+                                                class="form-input" 
+                                                placeholder="0912345678" 
+                                                required 
+                                                autocomplete="tel"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-row-2">
+                                    <div class="form-group">
+                                        <label class="form-label" for="regPassword">
+                                            Mật khẩu <span class="form-label-required">*</span>
+                                        </label>
+                                        <div class="form-input-wrapper">
+                                            <input 
+                                                type="password" 
+                                                id="regPassword" 
+                                                class="form-input" 
+                                                placeholder="Tối thiểu 6 ký tự" 
+                                                required 
+                                                autocomplete="new-password"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="regConfirmPassword">
+                                            Xác nhận MK <span class="form-label-required">*</span>
+                                        </label>
+                                        <div class="form-input-wrapper">
+                                            <input 
+                                                type="password" 
+                                                id="regConfirmPassword" 
+                                                class="form-input" 
+                                                placeholder="Nhập lại mật khẩu" 
+                                                required 
+                                                autocomplete="new-password"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="regAgree" checked required>
+                                        <span>Tôi đồng ý với <a href="javascript:void(0)">Điều khoản</a> & <a href="javascript:void(0)">Chính sách</a> của Cỏ Thơm.</span>
+                                    </label>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    Tạo Tài Khoản Ngay
+                                </button>
+                            </form>
+
+                            <div class="auth-footer">
+                                Đã có tài khoản? 
+                                <a href="javascript:void(0)" onclick="switchAuthMode('login');">Đăng nhập tại đây</a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- PHẦN B: KHÁCH ĐÃ ĐĂNG NHẬP (DASHBOARD QUẢN LÝ TÀI KHOẢN & ĐƠN HÀNG) -->
+        <!-- ================================================================== -->
+        <section id="accountDashboardSection" class="account-view-section">
+            
+            <!-- User Hero Card (Avatar tròn + Tên Serif + Email + Nút Đăng xuất) -->
+            <div class="user-hero-card">
+                <div class="user-hero-info">
+                    <div class="user-avatar-circle" id="userAvatarInitial">U</div>
+                    <div class="user-hero-details">
+                        <div class="user-hero-title-wrap">
+                            <h1 class="user-name" id="heroUserName">Quý khách</h1>
+                            <span class="user-hero-badge" id="heroUserRole">Thành viên thân thiết</span>
+                        </div>
+                        <div class="user-email">
+                            <span>✉️</span>
+                            <span id="heroUserEmail">email@example.com</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="handleLogout();">
+                        <span>🚪</span> Đăng xuất
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navbar Tabs chuyển đổi View (Hồ sơ cá nhân / Lịch sử đơn hàng) bằng onclick -->
+            <div class="account-nav-tabs">
+                <a href="javascript:void(0)" id="tabBtnProfile" class="account-tab-item active" onclick="switchAccountView('profile');">
+                    <span>👤</span> Hồ Sơ Của Tôi
+                </a>
+                <a href="javascript:void(0)" id="tabBtnOrders" class="account-tab-item" onclick="switchAccountView('orders');">
+                    <span>📦</span> Lịch Sử Đơn Hàng
+                    <span class="account-tab-badge order-count-badge" id="orderTabBadge">0</span>
+                </a>
+            </div>
+
+            <!-- ----------------- VIEW CON 1: HỒ SƠ CÁ NHÂN & ĐỔI MẬT KHẨU ----------------- -->
+            <div id="viewProfile" class="account-view-section active">
+                <!-- Thông báo chung cập nhật thông tin -->
+                <div id="profileAlert" class="alert-box"></div>
+
+                <!-- Card 1: Thông tin cá nhân & Địa chỉ nhận hàng -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2 class="content-card-title">Thông Tin Cá Nhân & Giao Hàng</h2>
+                        <button type="button" id="btnStartEditProfile" class="btn btn-secondary btn-sm" onclick="toggleEditProfile(true);">
+                            ✏️ Chỉnh sửa thông tin
+                        </button>
+                    </div>
+
+                    <div class="content-card-body">
+                        <form id="formProfile" onsubmit="return updateProfile(event);">
+                            <div class="profile-grid">
+                                <!-- Họ và tên -->
+                                <div class="form-group">
+                                    <label class="form-label" for="profName">Họ và tên <span class="form-label-required">*</span></label>
+                                    <input type="text" id="profName" class="form-input" disabled required>
+                                </div>
+
+                                <!-- Email (Cố định, không đổi) -->
+                                <div class="form-group">
+                                    <label class="form-label" for="profEmail">Địa chỉ Email (Cố định tài khoản)</label>
+                                    <input type="email" id="profEmail" class="form-input" disabled readonly>
+                                </div>
+
+                                <!-- Số điện thoại -->
+                                <div class="form-group">
+                                    <label class="form-label" for="profPhone">Số điện thoại <span class="form-label-required">*</span></label>
+                                    <input type="tel" id="profPhone" class="form-input" disabled required>
+                                </div>
+
+                                <!-- Tỉnh / Thành phố -->
+                                <div class="form-group">
+                                    <label class="form-label" for="profCity">Tỉnh / Thành phố</label>
+                                    <input type="text" id="profCity" class="form-input" placeholder="ví dụ: TP. Hồ Chí Minh hoặc Hà Nội" disabled>
+                                </div>
+
+                                <!-- Địa chỉ giao hàng chi tiết -->
+                                <div class="form-group">
+                                    <label class="form-label" for="profAddress">Địa chỉ nhà / Tên đường</label>
+                                    <input type="text" id="profAddress" class="form-input" placeholder="ví dụ: 14 Blossom Lane hoặc 123 Nguyễn Huệ" disabled>
+                                </div>
+
+                                <!-- Mã bưu điện (Postal Code) -->
+                                <div class="form-group">
+                                    <label class="form-label" for="profPostalCode">Mã bưu chính (Postal Code)</label>
+                                    <input type="text" id="profPostalCode" class="form-input" placeholder="ví dụ: 700000" disabled>
+                                </div>
+                            </div>
+
+                            <!-- Thanh hành động Chỉnh sửa / Hủy (Mặc định ẩn) -->
+                            <div id="profileActionsBar" class="profile-actions-bar auth-form-hidden">
+                                <button type="button" class="btn btn-secondary" onclick="cancelEditProfile();">
+                                    Hủy bỏ
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    💾 Lưu Thay Đổi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card 2: Bảo mật & Đổi Mật Khẩu -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h2 class="content-card-title">Bảo Mật & Đổi Mật Khẩu</h2>
+                    </div>
+
+                    <div class="content-card-body">
+                        <!-- Thông báo đổi mật khẩu -->
+                        <div id="passwordAlert" class="alert-box"></div>
+
+                        <form id="formChangePassword" onsubmit="return changePassword(event);">
+                            <div class="profile-grid">
+                                <!-- Mật khẩu hiện tại -->
+                                <div class="form-group">
+                                    <label class="form-label" for="currentPassword">
+                                        Mật khẩu hiện tại <span class="form-label-required">*</span>
+                                    </label>
+                                    <input 
+                                        type="password" 
+                                        id="currentPassword" 
+                                        class="form-input" 
+                                        placeholder="Nhập mật khẩu đang dùng" 
+                                        required
+                                    >
+                                </div>
+
+                                <!-- Mật khẩu mới -->
+                                <div class="form-group">
+                                    <label class="form-label" for="newPassword">
+                                        Mật khẩu mới <span class="form-label-required">*</span>
+                                    </label>
+                                    <input 
+                                        type="password" 
+                                        id="newPassword" 
+                                        class="form-input" 
+                                        placeholder="Tối thiểu 6 ký tự" 
+                                        required
+                                    >
+                                </div>
+
+                                <!-- Xác nhận mật khẩu mới -->
+                                <div class="form-group profile-grid-full form-group-half">
+                                    <label class="form-label" for="confirmNewPassword">
+                                        Xác nhận mật khẩu mới <span class="form-label-required">*</span>
+                                    </label>
+                                    <input 
+                                        type="password" 
+                                        id="confirmNewPassword" 
+                                        class="form-input" 
+                                        placeholder="Nhập lại mật khẩu mới" 
+                                        required
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="form-action-group">
+                                <button type="submit" class="btn btn-primary">
+                                    🔒 Cập Nhật Mật Khẩu
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ----------------- VIEW CON 2: LỊCH SỬ ĐƠN HÀNG ----------------- -->
+            <div id="viewOrders" class="account-view-section">
+                <!-- Danh sách đơn hàng được nạp tự động từ localStorage qua renderOrders() -->
+                <div id="orderListContainer" class="order-list"></div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 5. DRAWER TRƯỢT CHI TIẾT ĐƠN HÀNG (SLIDE-OVER DRAWER) -->
+    <div id="orderDrawerOverlay" class="order-drawer-overlay" onclick="if(event.target === this) closeOrderDrawer();">
+        <div class="order-drawer">
+            <!-- Header Drawer nền be (#F5EDE0) -->
+            <div class="drawer-header">
+                <h3 class="drawer-title" id="drawerOrderTitle">Chi tiết đơn hàng</h3>
+                <button type="button" class="drawer-close-btn" onclick="closeOrderDrawer();" title="Đóng cửa sổ">✕</button>
+            </div>
+
+            <!-- Body Drawer hiển thị dữ liệu chi tiết hóa đơn -->
+            <div class="drawer-body" id="drawerOrderContent">
+                <!-- Được nạp động từ openOrderDrawer(orderId) -->
+            </div>
+
+            <!-- Footer Drawer -->
+            <div class="drawer-footer">
+                <button type="button" class="btn btn-secondary btn-block" onclick="closeOrderDrawer();">
+                    Đóng cửa sổ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nạp thư viện Mock Data và Nghiệp vụ Auth -->
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/auth.js"></script>
+
+    <!-- Script khởi chạy tự động khi nạp trang account.html -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            // Tự động kiểm tra trạng thái đăng nhập và khởi tạo View tương ứng
+            initAccountPage();
+        });
+    </script>
+</body>
+</html>
