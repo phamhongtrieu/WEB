@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cỏ Thơm — Mỹ phẩm cao cấp</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <div id="view-home">
+      <section class="hero">
+        <div class="hero-slide active" data-slide="0">
+          <img src="https://images.unsplash.com/photo-1598528738936-c50861cc75a9?w=1600&h=800&fit=crop&auto=format" alt="Dưỡng da" />
+        </div>
+        <div class="hero-slide" data-slide="1">
+          <img src="https://images.unsplash.com/photo-1631730486572-226d1f595b68?w=1600&h=800&fit=crop&auto=format" alt="Trang điểm" />
+        </div>
+        <div class="hero-slide" data-slide="2">
+          <img src="https://images.unsplash.com/photo-1608979048467-6194dabc6a3d?w=1600&h=800&fit=crop&auto=format" alt="Nước hoa" />
+        </div>
+        <div class="wrap" style="position:relative;z-index:2;height:100%">
+          <div class="hero-copy" id="hero-copy"></div>
+        </div>
+        <div class="dots" id="hero-dots"></div>
+      </section>
+
+      <section class="promise">
+        <div class="wrap promise-grid">
+          <div class="promise-item"><span>✦</span><div><p>Miễn phí vận chuyển</p><small>Đơn từ 600.000₫</small></div></div>
+          <div class="promise-item"><span>◈</span><div><p>Không thử trên động vật</p><small>Nguồn gốc đạo đức</small></div></div>
+          <div class="promise-item"><span>⬡</span><div><p>Công thức thuần khiết</p><small>Không thành phần có hại</small></div></div>
+          <div class="promise-item"><span>↩</span><div><p>Đổi trả miễn phí</p><small>Bảo đảm 30 ngày</small></div></div>
+        </div>
+      </section>
+
+      <section class="section wrap">
+        <div class="row-head">
+          <div>
+            <p class="kicker">Khám phá</p>
+            <h2>Mua theo danh mục</h2>
+          </div>
+          <button class="btn-ghost" onclick="showCatalog('')">Xem tất cả</button>
+        </div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </section>
+
+      <section class="blush section">
+        <div class="wrap">
+          <div class="row-head">
+            <div>
+              <p class="kicker">Tuyển chọn</p>
+              <h2>Lựa chọn của biên tập viên</h2>
+            </div>
+            <button class="btn-ghost" onclick="showCatalog('')">Xem tất cả sản phẩm</button>
+          </div>
+          <div class="product-grid" id="featured-grid"></div>
+        </div>
+      </section>
+
+      <section class="section wrap">
+        <div class="editorial">
+          <button class="banner" onclick="showCatalog('Skincare')">
+            <img src="https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=900&h=600&fit=crop&auto=format" alt="Skincare" />
+            <div class="banner-copy">
+              <span>Bộ sưu tập hàng ngày</span>
+              <h3>Tinh túy chăm sóc da</h3>
+              <span class="btn btn-white">Mua ngay</span>
+            </div>
+          </button>
+          <div style="display:grid;gap:16px">
+            <button class="banner banner-sm" onclick="showCatalog('Fragrance')">
+              <img src="https://images.unsplash.com/photo-1608979048467-6194dabc6a3d?w=900&h=400&fit=crop&auto=format" alt="Fragrance" />
+              <div class="banner-copy"><span>Đặc trưng</span><h3>Bộ sưu tập nước hoa</h3></div>
+            </button>
+            <button class="banner banner-sm" onclick="showCatalog('Makeup')">
+              <img src="https://images.unsplash.com/photo-1631730486572-226d1f595b68?w=900&h=400&fit=crop&auto=format" alt="Makeup" />
+              <div class="banner-copy"><span>Câu chuyện màu sắc</span><h3>Bộ sưu tập trang điểm</h3></div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="reviews section">
+        <div class="wrap">
+          <div style="text-align:center;margin-bottom:36px">
+            <p class="kicker">Đánh giá</p>
+            <h2>Khách hàng nói gì về chúng tôi</h2>
+          </div>
+          <div class="rev-grid">
+            <article class="rev">
+              <div class="stars">★★★★★</div>
+              <p>“Serum Rạng Rỡ Luminous đã thay đổi làn da tôi. Đốm nâu mờ rõ sau 3 tháng.”</p>
+              <b>Chị Lan.</b>
+              <div class="muted" style="font-size:12px">Người mua đã xác thực</div>
+            </article>
+            <article class="rev">
+              <div class="stars">★★★★★</div>
+              <p>“Rose Oud là nước hoa đẹp nhất tôi từng dùng. Lưu hương hơn 12 tiếng.”</p>
+              <b>Chị Hòa.</b>
+              <div class="muted" style="font-size:12px">Người mua đã xác thực</div>
+            </article>
+            <article class="rev">
+              <div class="stars">★★★★★</div>
+              <p>“Bơ Dưỡng Thể Nhài Lụa xa xỉ. Da tôi chưa bao giờ mềm như vậy.”</p>
+              <b>Chị Linh.</b>
+              <div class="muted" style="font-size:12px">Người mua đã xác thực</div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="view-catalog" class="hidden">
+      <div class="wrap">
+        <nav class="crumb">
+          <button onclick="showHome()">Trang chủ</button> / <span id="crumb-cat">Cửa hàng</span>
+        </nav>
+        <div class="row-head">
+          <div>
+            <p class="kicker">Cửa hàng</p>
+            <h1 id="catalog-title">Tất cả sản phẩm</h1>
+          </div>
+          <p class="muted" id="catalog-count"></p>
+        </div>
+        <div class="catalog-layout">
+          <aside class="filters">
+            <h3>Danh mục</h3>
+            <button class="filter-btn active" onclick="filterCat('')">Tất cả</button>
+            <button class="filter-btn" onclick="filterCat('Skincare')">Chăm sóc da</button>
+            <button class="filter-btn" onclick="filterCat('Makeup')">Trang điểm</button>
+            <button class="filter-btn" onclick="filterCat('Bodycare')">Chăm sóc cơ thể</button>
+            <button class="filter-btn" onclick="filterCat('Hair')">Chăm sóc tóc</button>
+            <button class="filter-btn" onclick="filterCat('Fragrance')">Nước hoa</button>
+            <h3 style="margin-top:18px">Giá</h3>
+            <button class="filter-btn" onclick="filterPrice(0, 500000)">Dưới 500.000₫</button>
+            <button class="filter-btn" onclick="filterPrice(500000, 900000)">500.000₫ – 900.000₫</button>
+            <button class="filter-btn" onclick="filterPrice(900000, 99999999)">Trên 900.000₫</button>
+            <button class="filter-btn" onclick="filterPrice(0, 99999999)">Mọi mức giá</button>
+          </aside>
+          <div class="product-grid" id="catalog-grid"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const slides = [
+      { badge: "Hàng mới về", title: "Nghi thức\nDưỡng Da Rạng Ngời", sub: "Bộ sưu tập chăm sóc da từ tinh chất thực vật quý.", cta: "Mua chăm sóc da", cat: "Skincare" },
+      { badge: "Bán chạy nhất", title: "Nghệ thuật\nTrang Điểm", sub: "Nâng tầm vẻ đẹp hàng ngày với công thức chuyên nghiệp.", cta: "Mua trang điểm", cat: "Makeup" },
+      { badge: "Bộ sưu tập đặc biệt", title: "Hương thơm\nKể Chuyện", sub: "Những mùi hương bạn muốn mang theo mỗi ngày.", cta: "Mua nước hoa", cat: "Fragrance" },
+    ];
+    let slideIndex = 0;
+    let catFilter = "";
+    let priceRange = [0, 99999999];
+    let searchQ = "";
+
+    function renderHero() {
+      const s = slides[slideIndex];
+      document.getElementById("hero-copy").innerHTML = `
+        <span class="pill">${s.badge}</span>
+        <h1>${s.title}</h1>
+        <p>${s.sub}</p>
+        <button class="btn btn-white" onclick="showCatalog('${s.cat}')">${s.cta} →</button>`;
+      document.querySelectorAll(".hero-slide").forEach((el, i) => el.classList.toggle("active", i === slideIndex));
+      document.getElementById("hero-dots").innerHTML = slides
+        .map((_, i) => `<button class="${i === slideIndex ? "active" : ""}" onclick="slideIndex=${i};renderHero()"></button>`)
+        .join("");
+    }
+
+    function showHome() {
+      document.getElementById("view-home").classList.remove("hidden");
+      document.getElementById("view-catalog").classList.add("hidden");
+      history.replaceState({}, "", "index.html");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showCatalog(cat) {
+      catFilter = cat || "";
+      document.getElementById("view-home").classList.add("hidden");
+      document.getElementById("view-catalog").classList.remove("hidden");
+      renderCatalog();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function filterCat(cat) {
+      catFilter = cat;
+      renderCatalog();
+    }
+    function filterPrice(min, max) {
+      priceRange = [min, max];
+      renderCatalog();
+    }
+
+    function renderCatalog() {
+      const list = loadProducts().filter((p) => {
+        const okCat = !catFilter || p.category === catFilter;
+        const okPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
+        const okQ = !searchQ || (p.name + p.brand + p.category).toLowerCase().includes(searchQ.toLowerCase());
+        return okCat && okPrice && okQ;
+      });
+      document.getElementById("catalog-grid").innerHTML = list.map(productCard).join("") || "<p class='muted'>Không có sản phẩm phù hợp.</p>";
+      document.getElementById("catalog-title").textContent = catFilter ? CATEGORY_LABELS[catFilter] : "Tất cả sản phẩm";
+      document.getElementById("crumb-cat").textContent = catFilter ? CATEGORY_LABELS[catFilter] : "Cửa hàng";
+      document.getElementById("catalog-count").textContent = list.length + " sản phẩm";
+      document.querySelectorAll(".filters .filter-btn").forEach((btn) => {
+        const label = btn.textContent.trim();
+        btn.classList.toggle("active", (catFilter && label === CATEGORY_LABELS[catFilter]) || (!catFilter && label === "Tất cả"));
+      });
+    }
+
+    initShop();
+    document.getElementById("cat-grid").innerHTML = CATEGORIES.map((c, i) => `
+      <button class="cat-card" onclick="showCatalog('${c}')">
+        <img src="${CATEGORY_META[c].image}" alt="${CATEGORY_LABELS[c]}">
+        ${i === 0 ? '<span class="trend">Xu hướng</span>' : ""}
+        <div class="info"><small>${CATEGORY_META[c].tagline}</small><h3>${CATEGORY_LABELS[c]}</h3></div>
+      </button>`).join("");
+    const featured = loadProducts().filter((p) => ["1", "5", "8", "12"].includes(p.id));
+    document.getElementById("featured-grid").innerHTML = featured.map(productCard).join("");
+    renderHero();
+    setInterval(() => { slideIndex = (slideIndex + 1) % slides.length; renderHero(); }, 5500);
+
+    const p = params();
+    searchQ = p.get("q") || "";
+    if (p.get("view") === "catalog") showCatalog(p.get("cat") || "");
+  </script>
+</body>
+</html>

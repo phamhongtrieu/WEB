@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi tiết sản phẩm — Cỏ Thơm</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="wrap" id="detail-root"></main>
+  <div id="site-footer"></div>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let qty = 1;
+    let imgIndex = 0;
+    let tab = "description";
+    const id = params().get("id") || "1";
+    let product = getProductById(id);
+
+    function setQty(n) {
+      if (!product) return;
+      qty = Math.max(1, Math.min(product.stock, n));
+      render();
+    }
+    function setImg(i) { imgIndex = i; render(); }
+    function setTab(t) { tab = t; render(); }
+
+    function render() {
+      if (!product) {
+        document.getElementById("detail-root").innerHTML = `<div class="empty"><h2 class="font-display">Không tìm thấy sản phẩm</h2><button class="btn btn-rose" onclick="goCatalog('')">← Về cửa hàng</button></div>`;
+        return;
+      }
+      const off = discount(product);
+      const tabText = { description: product.description, ingredients: product.ingredients, directions: product.directions }[tab];
+      document.getElementById("detail-root").innerHTML = `
+        <nav class="crumb">
+          <button onclick="location.href='index.html'">Trang chủ</button> /
+          <button onclick="goCatalog('${product.category}')">${CATEGORY_LABELS[product.category]}</button> /
+          <span>${product.name}</span>
+        </nav>
+        <section class="detail">
+          <div class="gallery">
+            <div class="main-photo"><img src="${product.images[imgIndex]}" alt="${product.name}"></div>
+            <div class="thumbs">${product.images.map((src, i) => `<button class="${i===imgIndex?'active':''}" onclick="setImg(${i})"><img src="${src}" alt=""></button>`).join("")}</div>
+          </div>
+          <div>
+            <p class="kicker">${product.brand} · ${product.sku}</p>
+            <h1>${product.name}</h1>
+            <div class="stars" style="margin:10px 0">${stars(product.rating)} ${product.rating} (${product.reviews} đánh giá)</div>
+            <div class="price" style="font-size:24px">${money(product.price)}${product.originalPrice ? ` <s>${money(product.originalPrice)}</s>` : ""}${off ? ` <span class="sale">-${off}%</span>` : ""}</div>
+            <p class="medium" style="margin:16px 0">${product.description}</p>
+            <p class="muted">Còn ${product.stock} sản phẩm</p>
+            <div class="actions">
+              <div class="qty">
+                <button onclick="setQty(qty-1)">−</button>
+                <span>${qty}</span>
+                <button onclick="setQty(qty+1)">+</button>
+              </div>
+              <button class="btn btn-rose" onclick="addToCart('${product.id}', qty)">Thêm vào giỏ</button>
+              <button class="btn btn-dark" onclick="addToCart('${product.id}', qty); location.href='gio-hang.html'">Mua ngay</button>
+            </div>
+            <div class="tabs">
+              <button class="${tab==='description'?'active':''}" onclick="setTab('description')">Mô tả</button>
+              <button class="${tab==='ingredients'?'active':''}" onclick="setTab('ingredients')">Thành phần</button>
+              <button class="${tab==='directions'?'active':''}" onclick="setTab('directions')">Hướng dẫn</button>
+            </div>
+            <p class="medium">${tabText}</p>
+          </div>
+        </section>
+        <section class="section">
+          <p class="kicker">Gợi ý</p>
+          <h2>Sản phẩm cùng danh mục</h2>
+          <div class="product-grid" style="margin-top:20px" id="related"></div>
+        </section>`;
+      const related = loadProducts().filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+      document.getElementById("related").innerHTML = related.map(productCard).join("");
+    }
+
+    initShop(product ? product.category : "");
+    render();
+  </script>
+</body>
+</html>
