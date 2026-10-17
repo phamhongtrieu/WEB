@@ -15,6 +15,7 @@
       <p class="muted" id="checkout-total"></p>
       <form onsubmit="placeOrder(event)">
         <div class="field"><label>Họ tên</label><input name="name" required></div>
+        <div class="field"><label>Email</label><input name="email" type="email" required></div>
         <div class="field"><label>Số điện thoại</label><input name="phone" required></div>
         <div class="field"><label>Địa chỉ giao hàng</label><input name="address" required></div>
         <div class="field">
@@ -60,10 +61,10 @@
         <div class="cart-layout">
           <div>${items.map(({ product, quantity }) => `
             <div class="cart-item">
-              <img src="${product.images[0]}" alt="${product.name}" onclick="location.href='san-pham.html?id=${product.id}'">
+              <img src="${escapeHTML(product.images[0])}" alt="${escapeHTML(product.name)}" onclick="location.href='san-pham.html?id=${product.id}'">
               <div>
-                <div class="brand">${product.brand}</div>
-                <b>${product.name}</b>
+                <div class="brand">${escapeHTML(product.brand)}</div>
+                <b>${escapeHTML(product.name)}</b>
                 <div class="muted">${money(product.price)}</div>
                 <div class="qty" style="margin-top:8px">
                   <button onclick="updateQty('${product.id}', ${quantity - 1}); renderCart()">−</button>
@@ -93,9 +94,10 @@
       document.getElementById("checkout-total").textContent = "Tổng thanh toán: " + money(total);
       const form = document.querySelector("#checkout-overlay form");
       if (user) {
-        form.name.value = user.name || "";
-        form.phone.value = user.phone || "";
-        form.address.value = user.address || "";
+        form.elements.namedItem("name").value = user.name || "";
+        form.elements.namedItem("email").value = user.email || "";
+        form.elements.namedItem("phone").value = user.phone || "";
+        form.elements.namedItem("address").value = user.address || "";
       }
       openOverlay("checkout-overlay");
     }
@@ -104,12 +106,24 @@
       e.preventDefault();
       const { items, subtotal, shipping, total } = cartTotals();
       if (!items.length) return;
+      const products = loadProducts();
+      for (const item of items) {
+        const product = products.find((candidate) => candidate.id === item.productId);
+        if (!product || product.hidden || Number(product.stock) < item.quantity) {
+          toast("Sản phẩm trong giỏ không còn đủ hàng. Vui lòng cập nhật giỏ hàng.");
+          renderCart();
+          return;
+        }
+      }
       const form = new FormData(e.target);
+      const user = getUser();
       const order = {
         id: "CT-" + Date.now().toString().slice(-6),
-        date: new Date().toLocaleDateString("vi-VN"),
+        date: new Date().toISOString().slice(0, 10),
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity, name: i.product.name, price: i.product.price })),
         name: form.get("name"),
+        email: form.get("email").toString().trim().toLowerCase(),
+        customerId: user ? user.id : "",
         phone: form.get("phone"),
         address: form.get("address"),
         payment: form.get("payment"),
@@ -117,7 +131,14 @@
         shipping,
         total,
         status: "Đang xử lý",
+        inventoryReturned: false,
       };
+      items.forEach((item) => {
+        const product = products.find((candidate) => candidate.id === item.productId);
+        product.stock -= item.quantity;
+        recordStockMovement({ productId: product.id, quantity: -item.quantity, type: "Bán hàng", reference: order.id });
+      });
+      saveProducts(products);
       saveOrders([order, ...getOrders()]);
       saveCart([]);
       closeOverlays();

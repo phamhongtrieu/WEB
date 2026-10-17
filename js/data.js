@@ -257,13 +257,71 @@ const KEYS = {
   user: "cothom-user",
   orders: "cothom-orders",
   admin: "cothom-admin",
+  users: "cothom-users",
+  categories: "cothom-categories",
+  receipts: "cothom-receipts",
+  margins: "cothom-margins",
+  stockMovements: "cothom-stock-movements",
 };
+
+function readStoredList(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    console.error(`Không thể đọc dữ liệu ${key} từ bộ nhớ trình duyệt.`, error);
+    return [];
+  }
+}
+
+function loadCategories() {
+  const saved = readStoredList(KEYS.categories);
+  if (saved.length) {
+    CATEGORIES.splice(0, CATEGORIES.length, ...saved.map((category) => category.id));
+    Object.keys(CATEGORY_LABELS).forEach((id) => delete CATEGORY_LABELS[id]);
+    saved.forEach((category) => {
+      CATEGORY_LABELS[category.id] = category.name;
+      CATEGORY_META[category.id] = category.meta || { image: DEFAULT_PRODUCTS[0].images[0], tagline: category.name };
+    });
+  }
+  return CATEGORIES.map((id) => {
+    const stored = saved.find((category) => category.id === id);
+    return { id, name: CATEGORY_LABELS[id], meta: CATEGORY_META[id], hidden: Boolean(stored && stored.hidden) };
+  });
+}
+
+function saveCategories(categories) {
+  const normalized = categories.map((category) => ({ ...category, hidden: Boolean(category.hidden) }));
+  localStorage.setItem(KEYS.categories, JSON.stringify(normalized));
+  CATEGORIES.splice(0, CATEGORIES.length, ...normalized.map((category) => category.id));
+  Object.keys(CATEGORY_LABELS).forEach((id) => delete CATEGORY_LABELS[id]);
+  normalized.forEach((category) => {
+    CATEGORY_LABELS[category.id] = category.name;
+    CATEGORY_META[category.id] = category.meta || { image: DEFAULT_PRODUCTS[0].images[0], tagline: category.name };
+  });
+}
+
+loadCategories();
+
+function getVisibleCategories() {
+  return loadCategories().filter((category) => !category.hidden);
+}
+
+function isCategoryVisible(id) {
+  return getVisibleCategories().some((category) => category.id === id);
+}
 
 function loadProducts() {
   try {
     const saved = localStorage.getItem(KEYS.products);
-    if (saved) return JSON.parse(saved);
-  } catch (e) {}
+    if (saved) {
+      const products = JSON.parse(saved);
+      if (Array.isArray(products)) return products;
+      console.error("Dữ liệu sản phẩm trong bộ nhớ trình duyệt không hợp lệ.");
+    }
+  } catch (error) {
+    console.error("Không thể đọc dữ liệu sản phẩm từ bộ nhớ trình duyệt.", error);
+  }
   return DEFAULT_PRODUCTS.slice();
 }
 

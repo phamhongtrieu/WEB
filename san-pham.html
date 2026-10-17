@@ -28,7 +28,7 @@
     function setTab(t) { tab = t; render(); }
 
     function render() {
-      if (!product) {
+      if (!product || product.hidden || !isCategoryVisible(product.category)) {
         document.getElementById("detail-root").innerHTML = `<div class="empty"><h2 class="font-display">Không tìm thấy sản phẩm</h2><button class="btn btn-rose" onclick="goCatalog('')">← Về cửa hàng</button></div>`;
         return;
       }
@@ -38,19 +38,19 @@
         <nav class="crumb">
           <button onclick="location.href='index.html'">Trang chủ</button> /
           <button onclick="goCatalog('${product.category}')">${CATEGORY_LABELS[product.category]}</button> /
-          <span>${product.name}</span>
+          <span>${escapeHTML(product.name)}</span>
         </nav>
         <section class="detail">
           <div class="gallery">
-            <div class="main-photo"><img src="${product.images[imgIndex]}" alt="${product.name}"></div>
-            <div class="thumbs">${product.images.map((src, i) => `<button class="${i===imgIndex?'active':''}" onclick="setImg(${i})"><img src="${src}" alt=""></button>`).join("")}</div>
+            <div class="main-photo"><img src="${escapeHTML(product.images[imgIndex])}" alt="${escapeHTML(product.name)}"></div>
+            <div class="thumbs">${product.images.map((src, i) => `<button class="${i===imgIndex?'active':''}" onclick="setImg(${i})"><img src="${escapeHTML(src)}" alt=""></button>`).join("")}</div>
           </div>
           <div>
-            <p class="kicker">${product.brand} · ${product.sku}</p>
-            <h1>${product.name}</h1>
+            <p class="kicker">${escapeHTML(product.brand)} · ${escapeHTML(product.sku)}</p>
+            <h1>${escapeHTML(product.name)}</h1>
             <div class="stars" style="margin:10px 0">${stars(product.rating)} ${product.rating} (${product.reviews} đánh giá)</div>
             <div class="price" style="font-size:24px">${money(product.price)}${product.originalPrice ? ` <s>${money(product.originalPrice)}</s>` : ""}${off ? ` <span class="sale">-${off}%</span>` : ""}</div>
-            <p class="medium" style="margin:16px 0">${product.description}</p>
+            <p class="medium" style="margin:16px 0">${escapeHTML(product.description)}</p>
             <p class="muted">Còn ${product.stock} sản phẩm</p>
             <div class="actions">
               <div class="qty">
@@ -66,7 +66,7 @@
               <button class="${tab==='ingredients'?'active':''}" onclick="setTab('ingredients')">Thành phần</button>
               <button class="${tab==='directions'?'active':''}" onclick="setTab('directions')">Hướng dẫn</button>
             </div>
-            <p class="medium">${tabText}</p>
+            <p class="medium">${escapeHTML(tabText)}</p>
           </div>
         </section>
         <section class="section">
@@ -74,7 +74,7 @@
           <h2>Sản phẩm cùng danh mục</h2>
           <div class="product-grid" style="margin-top:20px" id="related"></div>
         </section>`;
-      const related = loadProducts().filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+      const related = loadProducts().filter((p) => !p.hidden && isCategoryVisible(p.category) && p.category === product.category && p.id !== product.id).slice(0, 4);
       document.getElementById("related").innerHTML = related.map(productCard).join("");
     }
 
