@@ -251,12 +251,21 @@ const DEFAULT_PRODUCTS = [
   },
 ];
 
+// Shipping policy, used by the cart, checkout, banners and seeded orders.
+const FREE_SHIP_MIN = 600000;
+const SHIP_FEE = 30000;
+
 const KEYS = {
   products: "cothom-products",
   cart: "cothom-cart",
   user: "cothom-user",
   orders: "cothom-orders",
   admin: "cothom-admin",
+  demoOrders: "cothom-admin-orders",
+  stockLog: "cothom-stock-log",
+  pricing: "cothom-pricing",
+  imports: "cothom-imports",
+  customers: "cothom-customers",
 };
 
 function loadProducts() {
@@ -269,6 +278,11 @@ function loadProducts() {
 
 function saveProducts(list) {
   localStorage.setItem(KEYS.products, JSON.stringify(list));
+}
+
+// Storefront only shows products the admin hasn't hidden.
+function shopProducts() {
+  return loadProducts().filter((p) => !p.hidden);
 }
 
 function getProductById(id) {

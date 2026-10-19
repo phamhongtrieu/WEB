@@ -663,14 +663,21 @@ td { padding: 14px 16px; font-size: 13px; border-top: 1px solid #f0ece7; }
 .st-ship { background: #eef4ff; color: #3558a6; }
 .st-wait { background: #fff6e8; color: #a06720; }
 .st-cancel { background: #f3f1ef; color: #7a726c; }
-.chart {
-  height: 220px;
-  background: linear-gradient(180deg, rgba(196, 120, 138, 0.18), transparent 70%);
-  border-radius: 16px;
-  position: relative;
-  overflow: hidden;
-}
-.chart svg { width: 100%; height: 100%; }
+.st-low { background: #fdecec; color: #b23b3b; }
+tr.row-low td { background: #fff7f6; }
+.admin-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+.admin-filters .field { margin: 0; flex: 1 1 160px; max-width: 240px; }
+.admin-section { margin-top: 32px; }
+.admin-section h2 { font-size: 22px; margin-bottom: 4px; }
+.admin-section > .muted { margin-bottom: 14px; }
+.date-pick { position: relative; }
+.date-pick input[readonly] { cursor: pointer; }
+.date-pick input[type] { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+td .cell-input { width: 90px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; }
+.bars { display: flex; align-items: stretch; gap: 8px; height: 200px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; }
+.bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; background: #fbf6f4; border-radius: 8px; }
+.bar { width: 100%; min-height: 2px; background: #b56f7e; border-radius: 8px 8px 0 0; }
 
 @media (max-width: 799px) {
   .admin-aside, .admin-aside.open, .admin-aside.desk {
