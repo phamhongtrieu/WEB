@@ -21,7 +21,7 @@ function cartCount() {
 
 function addToCart(productId, qty) {
   const product = getProductById(productId);
-  if (!product) return;
+  if (!product || product.hidden) return;
   const cart = getCart();
   const found = cart.find((i) => i.productId === productId);
   const nextQty = (found ? found.quantity : 0) + (qty || 1);
@@ -138,7 +138,7 @@ function renderHeader(active) {
   const host = document.getElementById("site-header");
   if (!host) return;
   host.innerHTML = `
-    <div class="announce">MIỄN PHÍ VẬN CHUYỂN ĐƠN TỪ 600.000₫ &nbsp;·&nbsp; MÃ <b>GLOW20</b> GIẢM 20%</div>
+    <div class="announce">MIỄN PHÍ VẬN CHUYỂN ĐƠN TỪ ${money(FREE_SHIP_MIN)} &nbsp;·&nbsp; MÃ <b>GLOW20</b> GIẢM 20%</div>
     <header class="site-header">
       <div class="header-inner">
         <button class="icon-btn menu-btn" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
@@ -234,7 +234,7 @@ function renderModals() {
           <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="6"></div>
           <button class="btn btn-rose" style="width:100%;margin-top:8px" type="submit">Tiếp tục</button>
         </form>
-        <p class="muted" style="margin-top:12px;font-size:12px">Demo: bất kỳ email/mật khẩu đều được. Admin: admin.html</p>
+        <p class="muted" style="margin-top:12px;font-size:12px">Tài khoản demo: minhanh@gmail.com / 123456. Admin: admin.html</p>
       </div>
     </div>
     <div id="account-overlay" class="overlay hidden" onclick="if(event.target===this)closeOverlays()">
@@ -277,21 +277,64 @@ function openAuth(mode) {
   document.getElementById("tab-login").classList.toggle("active", !isReg);
   document.getElementById("tab-register").classList.toggle("active", isReg);
   document.getElementById("name-field").style.display = isReg ? "block" : "none";
+  // Minimum length only applies to new passwords; a reset password ("1") must still be able to log in.
+  document.querySelector("#auth-overlay [name=password]").minLength = isReg ? 6 : 0;
   document.getElementById("auth-title").textContent = isReg ? "Tạo tài khoản" : "Chào mừng trở lại";
   document.getElementById("auth-sub").textContent = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
   window.__authMode = mode;
 }
 
+// shortcut: passwords sit in plain text in localStorage; fine for a demo, a real backend must hash them.
+const DEMO_CUSTOMERS = [
+  ["KH-001", "Nguyễn Minh Anh", "minhanh@gmail.com", "0901 234 567", "24 Nguyễn Huệ, Q.1, TP.HCM", "2023-08-12"],
+  ["KH-002", "Trần Ngọc Mai", "ngocmai@gmail.com", "0988 456 123", "18 Lê Lợi, Hải Châu, Đà Nẵng", "2023-11-03"],
+  ["KH-003", "Lê Thanh Hà", "thanhha@gmail.com", "0912 888 302", "57 Tràng Thi, Hoàn Kiếm, Hà Nội", "2024-01-21"],
+  ["KH-004", "Phạm Gia Hân", "giahan@gmail.com", "0935 777 810", "102 Hai Bà Trưng, Cần Thơ", "2024-03-10"],
+];
+
+const ACTIVE_STATUS = "Đang hoạt động";
+const RESET_PASSWORD = "1";
+
+function getCustomers() {
+  try {
+    const saved = localStorage.getItem(KEYS.customers);
+    // Accounts saved before the rename still carry "Kích hoạt".
+    if (saved) return JSON.parse(saved).map((c) => (c.status === "Kích hoạt" ? { ...c, status: ACTIVE_STATUS } : c));
+  } catch (e) {}
+  return DEMO_CUSTOMERS.map(([id, name, email, phone, address, joined]) => ({
+    id, name, email, phone, address, password: "123456", status: ACTIVE_STATUS, createdAt: new Date(joined + "T09:00").toISOString(),
+  }));
+}
+
+function saveCustomers(list) {
+  localStorage.setItem(KEYS.customers, JSON.stringify(list));
+}
+
 function submitAuth(e) {
   e.preventDefault();
   const form = new FormData(e.target);
-  const name = (form.get("name") || "").toString().trim() || form.get("email").toString().split("@")[0];
-  setUser({
-    name,
-    email: form.get("email"),
-    phone: "",
-    address: "",
-  });
+  const email = form.get("email").toString().trim().toLowerCase();
+  const password = form.get("password").toString();
+  const list = getCustomers();
+  let c = list.find((x) => x.email.toLowerCase() === email);
+  if (window.__authMode === "register") {
+    if (c) {
+      toast("Email này đã được đăng ký");
+      return;
+    }
+    const name = (form.get("name") || "").toString().trim() || email.split("@")[0];
+    c = { id: "KH-" + Date.now().toString().slice(-6), name, email, phone: "", address: "", password, status: ACTIVE_STATUS, createdAt: new Date().toISOString() };
+    list.push(c);
+    saveCustomers(list);
+  } else if (!c || c.password !== password) {
+    toast("Sai email hoặc mật khẩu");
+    return;
+  }
+  if (c.status === "Bị khóa") {
+    toast("Tài khoản đã bị khóa. Vui lòng liên hệ cửa hàng.");
+    return;
+  }
+  setUser({ name: c.name, email: c.email, phone: c.phone, address: c.address });
   closeOverlays();
   renderHeader(window.__activeNav);
   toast(window.__authMode === "register" ? "Đăng ký thành công" : "Đăng nhập thành công");
@@ -319,7 +362,7 @@ function openAccount(tab) {
     body.innerHTML = `<h2 class="font-display">Hồ sơ</h2>
       <form onsubmit="saveProfile(event)">
         <div class="field"><label>Họ tên</label><input name="name" value="${user.name || ""}" required></div>
-        <div class="field"><label>Email</label><input name="email" type="email" value="${user.email || ""}" required></div>
+        <div class="field"><label>Email</label><input name="email" type="email" value="${user.email || ""}" readonly></div>
         <div class="field"><label>Số điện thoại</label><input name="phone" value="${user.phone || ""}"></div>
         <div class="field"><label>Địa chỉ</label><input name="address" value="${user.address || ""}"></div>
         <button class="btn btn-rose" type="submit">Lưu thay đổi</button>
@@ -343,12 +386,14 @@ function openAccount(tab) {
 function saveProfile(e) {
   e.preventDefault();
   const form = new FormData(e.target);
-  setUser({
-    name: form.get("name"),
-    email: form.get("email"),
-    phone: form.get("phone"),
-    address: form.get("address"),
-  });
+  const user = { name: form.get("name"), email: form.get("email"), phone: form.get("phone"), address: form.get("address") };
+  setUser(user);
+  const list = getCustomers();
+  const c = list.find((x) => x.email === user.email);
+  if (c) {
+    Object.assign(c, { name: user.name, phone: user.phone, address: user.address });
+    saveCustomers(list);
+  }
   renderHeader(window.__activeNav);
   toast("Đã lưu hồ sơ");
   closeOverlays();
@@ -357,20 +402,23 @@ function saveProfile(e) {
 function cartItemsDetailed() {
   return getCart()
     .map((i) => ({ ...i, product: getProductById(i.productId) }))
-    .filter((i) => i.product);
+    .filter((i) => i.product && !i.product.hidden);
 }
 
 function cartTotals() {
   const items = cartItemsDetailed();
   const subtotal = items.reduce((s, i) => s + i.product.price * i.quantity, 0);
-  const shipping = subtotal >= 600000 || subtotal === 0 ? 0 : 30000;
+  const shipping = subtotal >= FREE_SHIP_MIN || subtotal === 0 ? 0 : SHIP_FEE;
   return { items, subtotal, shipping, total: subtotal + shipping };
 }
 
 function initShop(active) {
   window.__activeNav = active || "";
+  const user = getUser();
+  if (user && getCustomers().some((c) => c.email === user.email && c.status === "Bị khóa")) setUser(null);
   renderHeader(active);
   renderFooter();
+  document.querySelectorAll("[data-free-ship]").forEach((el) => (el.textContent = money(FREE_SHIP_MIN)));
   renderModals();
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".header-actions")) document.getElementById("user-menu")?.classList.add("hidden");

@@ -17,7 +17,7 @@
     let imgIndex = 0;
     let tab = "description";
     const id = params().get("id") || "1";
-    let product = getProductById(id);
+    let product = shopProducts().find((p) => String(p.id) === String(id));
 
     function setQty(n) {
       if (!product) return;
@@ -74,7 +74,7 @@
           <h2>Sản phẩm cùng danh mục</h2>
           <div class="product-grid" style="margin-top:20px" id="related"></div>
         </section>`;
-      const related = loadProducts().filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+      const related = shopProducts().filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
       document.getElementById("related").innerHTML = related.map(productCard).join("");
     }
 
