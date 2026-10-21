@@ -65,6 +65,7 @@ function getUser() {
   try {
     const user = JSON.parse(localStorage.getItem(KEYS.user) || "null");
     if (!user || !user.email) return user;
+    if (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) return user;
     const flags = readStored(KEYS.customerFlags, {});
     return flags[user.email.toLowerCase()] && flags[user.email.toLowerCase()].locked ? null : user;
   } catch (e) {
@@ -171,11 +172,11 @@ function renderHeader(active) {
                 user
                   ? `<button onclick="openAccount('profile')">Xin chào, ${user.name}</button>
                      <button onclick="openAccount('orders')">Đơn hàng của tôi</button>
+                     ${isAdmin() ? `<a href="admin.html">Trang quản trị</a>` : ""}
                      <button onclick="logout()">Đăng xuất</button>`
                   : `<button onclick="openAuth('login')">Đăng nhập</button>
                      <button onclick="openAuth('register')">Tạo tài khoản</button>`
               }
-              <a href="admin.html">Trang quản trị</a>
             </div>
           </div>
           <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng" onclick="return openCart()">
@@ -248,7 +249,7 @@ function renderModals() {
           <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="6"></div>
           <button class="btn btn-rose" style="width:100%;margin-top:8px" type="submit">Tiếp tục</button>
         </form>
-        <p class="muted" style="margin-top:12px;font-size:12px">Tài khoản demo được lưu trên trình duyệt này. Admin: admin.html</p>
+        <p class="muted" style="margin-top:12px;font-size:12px">Tài khoản quản trị: admin@cothom.vn / Admin@123</p>
       </div>
     </div>
     <div id="account-overlay" class="overlay hidden" onclick="if(event.target===this)closeOverlays()">
@@ -322,6 +323,32 @@ function submitAuth(e) {
   const email = form.get("email").toString().trim().toLowerCase();
   const password = form.get("password").toString();
   const isRegister = window.__authMode === "register";
+
+  if (email === ADMIN_EMAIL.toLowerCase()) {
+    if (isRegister) {
+      toast("Email này dành riêng cho quản trị viên.");
+      return;
+    }
+    if (password !== ADMIN_PASS) {
+      toast("Mật khẩu quản trị không đúng.");
+      return;
+    }
+    sessionStorage.setItem(KEYS.admin, "yes");
+    const adminUser = {
+      name: "Quản trị viên",
+      email: ADMIN_EMAIL,
+      role: "admin",
+      phone: "",
+      address: "",
+      addresses: [],
+    };
+    setUser(adminUser);
+    closeOverlays();
+    toast("Đăng nhập quản trị thành công");
+    location.href = "admin.html";
+    return;
+  }
+
   const accounts = readStored(KEYS.customerAccounts, []);
   const existing = accounts.find((account) => account.email === email);
   const flags = readStored(KEYS.customerFlags, {});
@@ -347,6 +374,7 @@ function submitAuth(e) {
     address: (existing && existing.address) || "",
     addresses: (existing && existing.addresses) || [],
   };
+  sessionStorage.removeItem(KEYS.admin);
   const pendingCheckout = window.__pendingCheckout;
   window.__pendingCheckout = false;
   setUser(user);
@@ -371,6 +399,7 @@ function submitAuth(e) {
 }
 
 function logout() {
+  sessionStorage.removeItem(KEYS.admin);
   setUser(null);
   closeOverlays();
   renderHeader(window.__activeNav);
@@ -469,6 +498,10 @@ function initShop(active) {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeUserMenu();
   });
+  const p = params();
+  if (p.get("auth") === "admin") {
+    openAuth("login", "Vui lòng đăng nhập với tài khoản Quản trị viên để truy cập trang quản trị.");
+  }
 }
 
 function params() {
