@@ -22,13 +22,6 @@ function cartCount() {
 }
 
 function addToCart(productId, qty, goToCartAfterAdd) {
-  const user = getUser();
-  if (!user) {
-    pendingCartAction = { productId, quantity: qty || 1, goToCart: Boolean(goToCartAfterAdd) };
-    openAuth("login");
-    toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
-    return false;
-  }
   const product = getProductById(productId);
   if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
     toast("Sản phẩm hiện không được bán.");
@@ -297,11 +290,7 @@ function closeUserMenu() {
   menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", "false");
 }
 function openCart() {
-  if (getUser()) return true;
-  window.__cartPage = true;
-  openAuth("login");
-  toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
-  return false;
+  return true;
 }
 function goCatalog(cat) {
   location.href = "index.html?view=catalog" + (cat ? "&cat=" + encodeURIComponent(cat) : "");
@@ -312,7 +301,7 @@ function submitSearch(e) {
   location.href = "index.html?view=catalog&q=" + encodeURIComponent(q);
 }
 
-function openAuth(mode) {
+function openAuth(mode, message) {
   renderModals();
   document.getElementById("user-menu")?.classList.add("hidden");
   openOverlay("auth-overlay");
@@ -322,7 +311,8 @@ function openAuth(mode) {
   document.getElementById("name-field").style.display = isReg ? "block" : "none";
   document.querySelector("#auth-overlay [name='name']").required = isReg;
   document.getElementById("auth-title").textContent = isReg ? "Tạo tài khoản" : "Chào mừng trở lại";
-  document.getElementById("auth-sub").textContent = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
+  const defaultSub = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
+  document.getElementById("auth-sub").textContent = message || (window.__pendingCheckout ? "Vui lòng đăng nhập để tiến hành thanh toán." : defaultSub);
   window.__authMode = mode;
 }
 
@@ -357,6 +347,8 @@ function submitAuth(e) {
     address: (existing && existing.address) || "",
     addresses: (existing && existing.addresses) || [],
   };
+  const pendingCheckout = window.__pendingCheckout;
+  window.__pendingCheckout = false;
   setUser(user);
   closeOverlays();
   renderHeader(window.__activeNav);
@@ -366,11 +358,15 @@ function submitAuth(e) {
     pendingCartAction = null;
     addToCart(action.productId, action.quantity, action.goToCart);
   }
-  if (window.__cartPage && typeof renderCart === "function") {
+  if (typeof renderCart === "function") {
     window.__cartPage = false;
     renderCart();
   } else if (window.__cartPage) {
+    window.__cartPage = false;
     location.href = "gio-hang.html";
+  }
+  if (pendingCheckout && typeof openCheckout === "function") {
+    openCheckout();
   }
 }
 

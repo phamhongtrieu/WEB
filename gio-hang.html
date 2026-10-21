@@ -47,18 +47,6 @@
     function renderCart() {
       const { items, subtotal, shipping, total } = cartTotals();
       const root = document.getElementById("cart-root");
-      if (!getUser()) {
-        window.__cartPage = true;
-        root.innerHTML = `<div class="empty">
-          <div class="empty-icon">👤</div>
-          <h2 class="font-display">Đăng nhập để sử dụng giỏ hàng</h2>
-          <p class="muted" style="margin:10px 0 22px">Đăng nhập hoặc tạo tài khoản để quản lý giỏ hàng và theo dõi đơn hàng của bạn.</p>
-          <button class="btn btn-rose" onclick="openAuth('login')">Đăng nhập</button>
-          <button class="btn-outline" onclick="openAuth('register')">Tạo tài khoản</button>
-        </div>`;
-        return;
-      }
-      window.__cartPage = false;
       if (!items.length) {
         root.innerHTML = `<div class="empty">
           <div class="empty-icon">👜</div>
@@ -106,7 +94,9 @@
     function openCheckout() {
       const user = getUser();
       if (!user) {
-        openAuth("login");
+        window.__pendingCheckout = true;
+        openAuth("login", "Vui lòng đăng nhập để tiến hành thanh toán.");
+        toast("Vui lòng đăng nhập để tiến hành thanh toán");
         return;
       }
       const { total } = cartTotals();
@@ -151,7 +141,9 @@
       const user = getUser();
       if (!user) {
         closeOverlays();
-        openAuth("login");
+        window.__pendingCheckout = true;
+        openAuth("login", "Vui lòng đăng nhập để tiến hành thanh toán.");
+        toast("Vui lòng đăng nhập để tiến hành thanh toán");
         return;
       }
       const { items, subtotal, shipping, total } = cartTotals();
