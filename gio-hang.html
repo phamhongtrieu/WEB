@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Giỏ hàng — Cỏ Thơm</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/user.css" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -16,14 +16,18 @@
       <form onsubmit="placeOrder(event)">
         <div class="field"><label>Họ tên</label><input name="name" required></div>
         <div class="field"><label>Số điện thoại</label><input name="phone" required></div>
-        <div class="field"><label>Địa chỉ giao hàng</label><input name="address" required></div>
+        <div class="field"><label>Chọn địa chỉ đã lưu</label><select name="savedAddress" onchange="checkoutAddressChanged(this.value)"></select></div>
+        <div class="field"><label>Địa chỉ giao hàng</label><textarea name="address" rows="2" required></textarea></div>
+        <label class="checkout-save-address"><input name="saveAddress" type="checkbox"> Lưu địa chỉ này vào tài khoản</label>
         <div class="field">
           <label>Phương thức</label>
-          <select name="payment">
-            <option value="COD">Thanh toán khi nhận hàng</option>
+          <select name="payment" onchange="checkoutPaymentChanged(this.value)">
+            <option value="COD">Tiền mặt khi nhận hàng (mặc định)</option>
             <option value="Bank">Chuyển khoản</option>
+            <option value="Online">Thanh toán trực tuyến</option>
           </select>
         </div>
+        <p class="muted checkout-payment-note" id="checkout-payment-note">Thanh toán tiền mặt khi nhận hàng.</p>
         <button class="btn btn-rose" style="width:100%" type="submit">Đặt hàng</button>
       </form>
     </div>
@@ -43,6 +47,18 @@
     function renderCart() {
       const { items, subtotal, shipping, total } = cartTotals();
       const root = document.getElementById("cart-root");
+      if (!getUser()) {
+        window.__cartPage = true;
+        root.innerHTML = `<div class="empty">
+          <div class="empty-icon">👤</div>
+          <h2 class="font-display">Đăng nhập để sử dụng giỏ hàng</h2>
+          <p class="muted" style="margin:10px 0 22px">Đăng nhập hoặc tạo tài khoản để quản lý giỏ hàng và theo dõi đơn hàng của bạn.</p>
+          <button class="btn btn-rose" onclick="openAuth('login')">Đăng nhập</button>
+          <button class="btn-outline" onclick="openAuth('register')">Tạo tài khoản</button>
+        </div>`;
+        return;
+      }
+      window.__cartPage = false;
       if (!items.length) {
         root.innerHTML = `<div class="empty">
           <div class="empty-icon">👜</div>
@@ -89,35 +105,112 @@
 
     function openCheckout() {
       const user = getUser();
+      if (!user) {
+        openAuth("login");
+        return;
+      }
       const { total } = cartTotals();
       document.getElementById("checkout-total").textContent = "Tổng thanh toán: " + money(total);
       const form = document.querySelector("#checkout-overlay form");
-      if (user) {
-        form.name.value = user.name || "";
-        form.phone.value = user.phone || "";
-        form.address.value = user.address || "";
-      }
+      const addresses = [...new Set([user.address, ...(user.addresses || [])].map((item) => (item || "").trim()).filter(Boolean))];
+      form.elements.name.value = user.name || "";
+      form.elements.phone.value = user.phone || "";
+      form.elements.savedAddress.innerHTML = `<option value="">Nhập địa chỉ mới</option>${addresses.map((address, index) => `<option value="${index}">${address}</option>`).join("")}`;
+      form.elements.address.value = user.address || "";
+      form.elements.savedAddress.value = addresses.length ? "0" : "";
+      form.elements.saveAddress.checked = false;
+      if (addresses.length) form.elements.address.value = addresses[0];
+      form.elements.payment.value = "COD";
+      checkoutPaymentChanged(form.elements.payment.value);
       openOverlay("checkout-overlay");
+    }
+
+    function checkoutAddressChanged(value) {
+      const field = document.querySelector("#checkout-overlay [name='address']");
+      const user = getUser();
+      const addresses = [...new Set([user.address, ...(user.addresses || [])].map((item) => (item || "").trim()).filter(Boolean))];
+      if (value === "") {
+        field.value = "";
+        field.focus();
+        return;
+      }
+      field.value = addresses[Number(value)] || "";
+    }
+
+    function checkoutPaymentChanged(value) {
+      const note = document.getElementById("checkout-payment-note");
+      note.textContent = value === "Bank"
+        ? "Thông tin chuyển khoản sẽ được hiển thị sau khi xác nhận đơn hàng."
+        : value === "Online"
+          ? "Thanh toán trực tuyến đang ở chế độ mô phỏng cho bản demo."
+          : "Thanh toán tiền mặt khi nhận hàng.";
     }
 
     function placeOrder(e) {
       e.preventDefault();
+      const user = getUser();
+      if (!user) {
+        closeOverlays();
+        openAuth("login");
+        return;
+      }
       const { items, subtotal, shipping, total } = cartTotals();
       if (!items.length) return;
+      const products = loadProducts();
+      const unavailable = items.find(({ product, quantity }) => {
+        const current = products.find((entry) => String(entry.id) === String(product.id));
+        return !current || current.hidden || !getCategoryList().some((category) => category.id === current.category) || current.stock < quantity;
+      });
+      if (unavailable) {
+        toast("Số lượng tồn kho đã thay đổi. Vui lòng kiểm tra lại giỏ hàng.");
+        return;
+      }
       const form = new FormData(e.target);
+      const address = form.get("address").toString().trim();
+      if (form.get("saveAddress") === "on" && address) {
+        user.address = address;
+        user.addresses = [...new Set([address, ...(user.addresses || [])])];
+        setUser(user);
+        const accounts = readStored(KEYS.customerAccounts, []);
+        const account = accounts.find((item) => item.email === user.email.toLowerCase());
+        if (account) {
+          account.address = address;
+          account.addresses = user.addresses;
+          writeStored(KEYS.customerAccounts, accounts);
+        }
+      }
+      const dateISO = new Date().toISOString().slice(0, 10);
       const order = {
         id: "CT-" + Date.now().toString().slice(-6),
         date: new Date().toLocaleDateString("vi-VN"),
+        dateISO,
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity, name: i.product.name, price: i.product.price })),
         name: form.get("name"),
         phone: form.get("phone"),
-        address: form.get("address"),
+        address,
+        email: user.email,
         payment: form.get("payment"),
         subtotal,
         shipping,
         total,
         status: "Đang xử lý",
       };
+      const movements = readStored(KEYS.stockMovements, []);
+      for (const item of items) {
+        const product = products.find((entry) => String(entry.id) === String(item.productId));
+        product.stock -= item.quantity;
+        movements.unshift({
+          id: "OUT-" + Date.now() + "-" + item.productId,
+          productId: item.productId,
+          productName: product.name,
+          quantity: item.quantity,
+          type: "Xuất bán",
+          date: dateISO,
+          reference: order.id,
+        });
+      }
+      saveProducts(products);
+      writeStored(KEYS.stockMovements, movements);
       saveOrders([order, ...getOrders()]);
       saveCart([]);
       closeOverlays();

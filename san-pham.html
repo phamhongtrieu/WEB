@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chi tiết sản phẩm — Cỏ Thơm</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/user.css" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -18,6 +18,7 @@
     let tab = "description";
     const id = params().get("id") || "1";
     let product = getProductById(id);
+    if (product && (product.hidden || !getCategoryList().some((category) => category.id === product.category))) product = null;
 
     function setQty(n) {
       if (!product) return;
@@ -37,7 +38,7 @@
       document.getElementById("detail-root").innerHTML = `
         <nav class="crumb">
           <button onclick="location.href='index.html'">Trang chủ</button> /
-          <button onclick="goCatalog('${product.category}')">${CATEGORY_LABELS[product.category]}</button> /
+          <button onclick="goCatalog('${product.category}')">${categoryLabel(product.category)}</button> /
           <span>${product.name}</span>
         </nav>
         <section class="detail">
@@ -59,7 +60,7 @@
                 <button onclick="setQty(qty+1)">+</button>
               </div>
               <button class="btn btn-rose" onclick="addToCart('${product.id}', qty)">Thêm vào giỏ</button>
-              <button class="btn btn-dark" onclick="addToCart('${product.id}', qty); location.href='gio-hang.html'">Mua ngay</button>
+              <button class="btn btn-dark" onclick="buyNow('${product.id}', qty)">Mua ngay</button>
             </div>
             <div class="tabs">
               <button class="${tab==='description'?'active':''}" onclick="setTab('description')">Mô tả</button>
@@ -74,7 +75,7 @@
           <h2>Sản phẩm cùng danh mục</h2>
           <div class="product-grid" style="margin-top:20px" id="related"></div>
         </section>`;
-      const related = loadProducts().filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+      const related = loadProducts().filter((p) => !p.hidden && p.category === product.category && p.id !== product.id).slice(0, 4);
       document.getElementById("related").innerHTML = related.map(productCard).join("");
     }
 

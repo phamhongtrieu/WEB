@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cỏ Thơm — Mỹ phẩm cao cấp</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/user.css" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -118,6 +118,19 @@
         <nav class="crumb">
           <button onclick="showHome()">Trang chủ</button> / <span id="crumb-cat">Cửa hàng</span>
         </nav>
+        <form class="catalog-search" id="catalog-search" onsubmit="applyAdvancedSearch(event)">
+          <div class="catalog-search-title">
+            <div><p class="kicker">Tìm kiếm nâng cao</p><h2 class="font-display">Tìm sản phẩm phù hợp</h2></div>
+            <button class="btn-ghost" type="button" onclick="resetCatalogFilters()">Xóa bộ lọc</button>
+          </div>
+          <div class="catalog-search-fields">
+            <label>Tên sản phẩm<input name="name" type="search" placeholder="Ví dụ: serum..." value=""></label>
+            <label>Loại sản phẩm<select name="category"><option value="">Tất cả loại</option></select></label>
+            <label>Giá từ<input name="minPrice" type="number" min="0" placeholder="0"></label>
+            <label>Đến giá<input name="maxPrice" type="number" min="0" placeholder="Không giới hạn"></label>
+            <button class="btn btn-rose" type="submit">Tìm kiếm</button>
+          </div>
+        </form>
         <div class="row-head">
           <div>
             <p class="kicker">Cửa hàng</p>
@@ -129,11 +142,7 @@
           <aside class="filters">
             <h3>Danh mục</h3>
             <button class="filter-btn active" onclick="filterCat('')">Tất cả</button>
-            <button class="filter-btn" onclick="filterCat('Skincare')">Chăm sóc da</button>
-            <button class="filter-btn" onclick="filterCat('Makeup')">Trang điểm</button>
-            <button class="filter-btn" onclick="filterCat('Bodycare')">Chăm sóc cơ thể</button>
-            <button class="filter-btn" onclick="filterCat('Hair')">Chăm sóc tóc</button>
-            <button class="filter-btn" onclick="filterCat('Fragrance')">Nước hoa</button>
+            <div id="category-filters"></div>
             <h3 style="margin-top:18px">Giá</h3>
             <button class="filter-btn" onclick="filterPrice(0, 500000)">Dưới 500.000₫</button>
             <button class="filter-btn" onclick="filterPrice(500000, 900000)">500.000₫ – 900.000₫</button>
@@ -142,6 +151,7 @@
           </aside>
           <div class="product-grid" id="catalog-grid"></div>
         </div>
+        <nav class="catalog-pagination" id="catalog-pagination" aria-label="Phân trang sản phẩm"></nav>
       </div>
     </div>
   </main>
@@ -159,6 +169,10 @@
     let catFilter = "";
     let priceRange = [0, 99999999];
     let searchQ = "";
+    let searchMinPrice = "";
+    let searchMaxPrice = "";
+    let catalogPage = 1;
+    const catalogPageSize = 8;
 
     function renderHero() {
       const s = slides[slideIndex];
@@ -182,6 +196,7 @@
 
     function showCatalog(cat) {
       catFilter = cat || "";
+      catalogPage = 1;
       document.getElementById("view-home").classList.add("hidden");
       document.getElementById("view-catalog").classList.remove("hidden");
       renderCatalog();
@@ -190,44 +205,96 @@
 
     function filterCat(cat) {
       catFilter = cat;
+      catalogPage = 1;
       renderCatalog();
     }
     function filterPrice(min, max) {
       priceRange = [min, max];
+      catalogPage = 1;
       renderCatalog();
+    }
+
+    function applyAdvancedSearch(e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      searchQ = form.get("name").toString().trim();
+      catFilter = form.get("category").toString();
+      searchMinPrice = form.get("minPrice").toString();
+      searchMaxPrice = form.get("maxPrice").toString();
+      priceRange = [0, 99999999];
+      catalogPage = 1;
+      renderCatalog();
+    }
+
+    function resetCatalogFilters() {
+      catFilter = "";
+      searchQ = "";
+      searchMinPrice = "";
+      searchMaxPrice = "";
+      priceRange = [0, 99999999];
+      catalogPage = 1;
+      renderCatalog();
+    }
+
+    function changeCatalogPage(nextPage) {
+      catalogPage = nextPage;
+      renderCatalog();
+      document.getElementById("catalog-search").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function renderCatalog() {
       const list = loadProducts().filter((p) => {
+        if (p.hidden || !getCategoryList().some((category) => category.id === p.category)) return false;
         const okCat = !catFilter || p.category === catFilter;
-        const okPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
-        const okQ = !searchQ || (p.name + p.brand + p.category).toLowerCase().includes(searchQ.toLowerCase());
+        const minPrice = Math.max(priceRange[0], searchMinPrice === "" ? 0 : Number(searchMinPrice));
+        const maxPrice = Math.min(priceRange[1], searchMaxPrice === "" ? 99999999 : Number(searchMaxPrice));
+        const okPrice = p.price >= minPrice && p.price <= maxPrice;
+        const okQ = !searchQ || p.name.toLowerCase().includes(searchQ.toLowerCase());
         return okCat && okPrice && okQ;
       });
-      document.getElementById("catalog-grid").innerHTML = list.map(productCard).join("") || "<p class='muted'>Không có sản phẩm phù hợp.</p>";
-      document.getElementById("catalog-title").textContent = catFilter ? CATEGORY_LABELS[catFilter] : "Tất cả sản phẩm";
-      document.getElementById("crumb-cat").textContent = catFilter ? CATEGORY_LABELS[catFilter] : "Cửa hàng";
-      document.getElementById("catalog-count").textContent = list.length + " sản phẩm";
+      const pageCount = Math.ceil(list.length / catalogPageSize);
+      catalogPage = Math.max(1, Math.min(catalogPage, pageCount || 1));
+      const start = (catalogPage - 1) * catalogPageSize;
+      const pageItems = list.slice(start, start + catalogPageSize);
+      document.getElementById("catalog-grid").innerHTML = pageItems.map(productCard).join("") || "<p class='muted'>Không có sản phẩm phù hợp.</p>";
+      document.getElementById("catalog-title").textContent = catFilter ? categoryLabel(catFilter) : "Tất cả sản phẩm";
+      document.getElementById("crumb-cat").textContent = catFilter ? categoryLabel(catFilter) : "Cửa hàng";
+      document.getElementById("catalog-count").textContent = list.length ? `${start + 1}–${Math.min(start + catalogPageSize, list.length)} / ${list.length} sản phẩm` : "0 sản phẩm";
+      document.getElementById("category-filters").innerHTML = getCategoryList().map((category) =>
+        `<button class="filter-btn" onclick="filterCat('${category.id}')">${category.label}</button>`
+      ).join("");
+      const searchForm = document.getElementById("catalog-search");
+      searchForm.elements.name.value = searchQ;
+      searchForm.elements.category.innerHTML = `<option value="">Tất cả loại</option>${getCategoryList().map((category) => `<option value="${category.id}">${category.label}</option>`).join("")}`;
+      searchForm.elements.category.value = catFilter;
+      searchForm.elements.minPrice.value = searchMinPrice;
+      searchForm.elements.maxPrice.value = searchMaxPrice;
+      document.getElementById("catalog-pagination").innerHTML = pageCount > 1
+        ? `<button class="btn-outline" ${catalogPage === 1 ? "disabled" : ""} onclick="changeCatalogPage(${catalogPage - 1})">← Trước</button>
+          <span>Trang ${catalogPage} / ${pageCount}</span>
+          <button class="btn-outline" ${catalogPage === pageCount ? "disabled" : ""} onclick="changeCatalogPage(${catalogPage + 1})">Tiếp →</button>`
+        : "";
       document.querySelectorAll(".filters .filter-btn").forEach((btn) => {
         const label = btn.textContent.trim();
-        btn.classList.toggle("active", (catFilter && label === CATEGORY_LABELS[catFilter]) || (!catFilter && label === "Tất cả"));
+        btn.classList.toggle("active", (catFilter && label === categoryLabel(catFilter)) || (!catFilter && label === "Tất cả"));
       });
     }
 
     initShop();
-    document.getElementById("cat-grid").innerHTML = CATEGORIES.map((c, i) => `
-      <button class="cat-card" onclick="showCatalog('${c}')">
-        <img src="${CATEGORY_META[c].image}" alt="${CATEGORY_LABELS[c]}">
+    document.getElementById("cat-grid").innerHTML = getCategoryList().map((c, i) => `
+      <button class="cat-card" onclick="showCatalog('${c.id}')">
+        <img src="${c.image}" alt="${c.label}">
         ${i === 0 ? '<span class="trend">Xu hướng</span>' : ""}
-        <div class="info"><small>${CATEGORY_META[c].tagline}</small><h3>${CATEGORY_LABELS[c]}</h3></div>
+        <div class="info"><small>${c.tagline}</small><h3>${c.label}</h3></div>
       </button>`).join("");
-    const featured = loadProducts().filter((p) => ["1", "5", "8", "12"].includes(p.id));
+    const featured = loadProducts().filter((p) => !p.hidden && getCategoryList().some((category) => category.id === p.category) && ["1", "5", "8", "12"].includes(p.id));
     document.getElementById("featured-grid").innerHTML = featured.map(productCard).join("");
     renderHero();
     setInterval(() => { slideIndex = (slideIndex + 1) % slides.length; renderHero(); }, 5500);
 
     const p = params();
     searchQ = p.get("q") || "";
+    catFilter = p.get("cat") || "";
     if (p.get("view") === "catalog") showCatalog(p.get("cat") || "");
   </script>
 </body>

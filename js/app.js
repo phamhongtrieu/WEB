@@ -1,3 +1,5 @@
+let pendingCartAction = null;
+
 function money(n) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n || 0);
 }
@@ -19,9 +21,19 @@ function cartCount() {
   return getCart().reduce((s, i) => s + i.quantity, 0);
 }
 
-function addToCart(productId, qty) {
+function addToCart(productId, qty, goToCartAfterAdd) {
+  const user = getUser();
+  if (!user) {
+    pendingCartAction = { productId, quantity: qty || 1, goToCart: Boolean(goToCartAfterAdd) };
+    openAuth("login");
+    toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
+    return false;
+  }
   const product = getProductById(productId);
-  if (!product) return;
+  if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
+    toast("Sản phẩm hiện không được bán.");
+    return;
+  }
   const cart = getCart();
   const found = cart.find((i) => i.productId === productId);
   const nextQty = (found ? found.quantity : 0) + (qty || 1);
@@ -33,6 +45,12 @@ function addToCart(productId, qty) {
   else cart.push({ productId, quantity: qty || 1 });
   saveCart(cart);
   toast("Đã thêm vào giỏ hàng");
+  if (goToCartAfterAdd) location.href = "gio-hang.html";
+  return true;
+}
+
+function buyNow(productId, qty) {
+  addToCart(productId, qty, true);
 }
 
 function updateQty(productId, quantity) {
@@ -52,7 +70,10 @@ function removeFromCart(productId) {
 
 function getUser() {
   try {
-    return JSON.parse(localStorage.getItem(KEYS.user) || "null");
+    const user = JSON.parse(localStorage.getItem(KEYS.user) || "null");
+    if (!user || !user.email) return user;
+    const flags = readStored(KEYS.customerFlags, {});
+    return flags[user.email.toLowerCase()] && flags[user.email.toLowerCase()].locked ? null : user;
   } catch (e) {
     return null;
   }
@@ -144,14 +165,14 @@ function renderHeader(active) {
         <button class="icon-btn menu-btn" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
         <button class="logo" onclick="location.href='index.html'">CỎ THƠM</button>
         <nav class="nav-desk">
-          ${CATEGORIES.map(
-            (c) => `<button class="${active === c ? "active" : ""}" onclick="goCatalog('${c}')">${CATEGORY_LABELS[c]}</button>`
+          ${getCategoryList().map(
+            (c) => `<button class="${active === c.id ? "active" : ""}" onclick="goCatalog('${c.id}')">${c.label}</button>`
           ).join("")}
         </nav>
         <div class="header-actions">
           <button class="icon-btn" onclick="toggleSearch()" aria-label="Tìm kiếm">⌕</button>
-          <div style="position:relative">
-            <button class="icon-btn" onclick="toggleUserMenu()" aria-label="Tài khoản">👤</button>
+          <div class="account-menu-wrap" style="position:relative" onmouseenter="openUserMenu()" onmouseleave="closeUserMenu()">
+            <button class="icon-btn" onclick="toggleUserMenu()" aria-label="Tài khoản" aria-haspopup="true" aria-expanded="false">👤</button>
             <div id="user-menu" class="user-menu hidden">
               ${
                 user
@@ -164,13 +185,13 @@ function renderHeader(active) {
               <a href="admin.html">Trang quản trị</a>
             </div>
           </div>
-          <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng">
+          <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng" onclick="return openCart()">
             👜<span class="badge-count" data-cart-count></span>
           </a>
         </div>
       </div>
       <div id="mobile-nav" class="mobile-nav">
-        ${CATEGORIES.map((c) => `<button onclick="goCatalog('${c}')">${CATEGORY_LABELS[c]}</button>`).join("")}
+        ${getCategoryList().map((c) => `<button onclick="goCatalog('${c.id}')">${c.label}</button>`).join("")}
       </div>
       <form class="search-bar hidden" id="search-bar" onsubmit="submitSearch(event)">
         <input id="search-input" placeholder="Tìm serum, son, nước hoa..." />
@@ -191,7 +212,7 @@ function renderFooter() {
         </div>
         <div>
           <h4>Mua sắm</h4>
-          ${CATEGORIES.map((c) => `<button onclick="goCatalog('${c}')">${CATEGORY_LABELS[c]}</button>`).join("")}
+          ${getCategoryList().map((c) => `<button onclick="goCatalog('${c.id}')">${c.label}</button>`).join("")}
           <button onclick="goCatalog('')">Tất cả sản phẩm</button>
         </div>
         <div>
@@ -234,7 +255,7 @@ function renderModals() {
           <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="6"></div>
           <button class="btn btn-rose" style="width:100%;margin-top:8px" type="submit">Tiếp tục</button>
         </form>
-        <p class="muted" style="margin-top:12px;font-size:12px">Demo: bất kỳ email/mật khẩu đều được. Admin: admin.html</p>
+        <p class="muted" style="margin-top:12px;font-size:12px">Tài khoản demo được lưu trên trình duyệt này. Admin: admin.html</p>
       </div>
     </div>
     <div id="account-overlay" class="overlay hidden" onclick="if(event.target===this)closeOverlays()">
@@ -258,7 +279,29 @@ function toggleSearch() {
   if (!bar.classList.contains("hidden")) document.getElementById("search-input").focus();
 }
 function toggleUserMenu() {
-  document.getElementById("user-menu")?.classList.toggle("hidden");
+  const menu = document.getElementById("user-menu");
+  if (!menu) return;
+  const isOpen = menu.classList.toggle("hidden") === false;
+  menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", String(isOpen));
+}
+function openUserMenu() {
+  const menu = document.getElementById("user-menu");
+  if (!menu) return;
+  menu.classList.remove("hidden");
+  menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", "true");
+}
+function closeUserMenu() {
+  const menu = document.getElementById("user-menu");
+  if (!menu) return;
+  menu.classList.add("hidden");
+  menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", "false");
+}
+function openCart() {
+  if (getUser()) return true;
+  window.__cartPage = true;
+  openAuth("login");
+  toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
+  return false;
 }
 function goCatalog(cat) {
   location.href = "index.html?view=catalog" + (cat ? "&cat=" + encodeURIComponent(cat) : "");
@@ -277,6 +320,7 @@ function openAuth(mode) {
   document.getElementById("tab-login").classList.toggle("active", !isReg);
   document.getElementById("tab-register").classList.toggle("active", isReg);
   document.getElementById("name-field").style.display = isReg ? "block" : "none";
+  document.querySelector("#auth-overlay [name='name']").required = isReg;
   document.getElementById("auth-title").textContent = isReg ? "Tạo tài khoản" : "Chào mừng trở lại";
   document.getElementById("auth-sub").textContent = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
   window.__authMode = mode;
@@ -285,21 +329,56 @@ function openAuth(mode) {
 function submitAuth(e) {
   e.preventDefault();
   const form = new FormData(e.target);
-  const name = (form.get("name") || "").toString().trim() || form.get("email").toString().split("@")[0];
-  setUser({
+  const email = form.get("email").toString().trim().toLowerCase();
+  const password = form.get("password").toString();
+  const isRegister = window.__authMode === "register";
+  const accounts = readStored(KEYS.customerAccounts, []);
+  const existing = accounts.find((account) => account.email === email);
+  const flags = readStored(KEYS.customerFlags, {});
+  if (flags[email] && flags[email].locked) {
+    toast("Tài khoản đã bị khóa. Vui lòng liên hệ cửa hàng.");
+    return;
+  }
+  if (isRegister && existing) {
+    toast("Email này đã được đăng ký.");
+    return;
+  }
+  if (!isRegister && (!existing || existing.password !== password)) {
+    toast("Email hoặc mật khẩu không đúng.");
+    return;
+  }
+  const name = (form.get("name") || (existing && existing.name) || "").toString().trim() || email.split("@")[0];
+  const account = { ...(existing || {}), name, email, password };
+  writeStored(KEYS.customerAccounts, [account, ...accounts.filter((item) => item.email !== email)]);
+  const user = {
     name,
-    email: form.get("email"),
-    phone: "",
-    address: "",
-  });
+    email,
+    phone: (existing && existing.phone) || "",
+    address: (existing && existing.address) || "",
+    addresses: (existing && existing.addresses) || [],
+  };
+  setUser(user);
   closeOverlays();
   renderHeader(window.__activeNav);
-  toast(window.__authMode === "register" ? "Đăng ký thành công" : "Đăng nhập thành công");
+  toast(isRegister ? "Đăng ký thành công" : "Đăng nhập thành công");
+  if (pendingCartAction) {
+    const action = pendingCartAction;
+    pendingCartAction = null;
+    addToCart(action.productId, action.quantity, action.goToCart);
+  }
+  if (window.__cartPage && typeof renderCart === "function") {
+    window.__cartPage = false;
+    renderCart();
+  } else if (window.__cartPage) {
+    location.href = "gio-hang.html";
+  }
 }
 
 function logout() {
   setUser(null);
+  closeOverlays();
   renderHeader(window.__activeNav);
+  if (typeof renderCart === "function") renderCart();
   toast("Đã đăng xuất");
 }
 
@@ -316,39 +395,55 @@ function openAccount(tab) {
   document.getElementById("acc-orders").classList.toggle("active", tab === "orders");
   const body = document.getElementById("account-body");
   if (tab === "profile") {
+    const addresses = [...new Set([user.address, ...(user.addresses || [])].filter(Boolean))];
     body.innerHTML = `<h2 class="font-display">Hồ sơ</h2>
       <form onsubmit="saveProfile(event)">
         <div class="field"><label>Họ tên</label><input name="name" value="${user.name || ""}" required></div>
-        <div class="field"><label>Email</label><input name="email" type="email" value="${user.email || ""}" required></div>
+        <div class="field"><label>Email (không thể thay đổi)</label><input name="email" type="email" value="${user.email || ""}" readonly></div>
         <div class="field"><label>Số điện thoại</label><input name="phone" value="${user.phone || ""}"></div>
-        <div class="field"><label>Địa chỉ</label><input name="address" value="${user.address || ""}"></div>
+        <div class="field"><label>Địa chỉ mặc định</label><input name="address" value="${user.address || ""}"></div>
+        <div class="field"><label>Địa chỉ giao hàng đã lưu (mỗi địa chỉ một dòng)</label><textarea name="addresses" rows="3" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">${addresses.join("\n")}</textarea></div>
         <button class="btn btn-rose" type="submit">Lưu thay đổi</button>
       </form>`;
   } else {
-    const orders = getOrders();
+    const orders = getOrders().filter((order) => (order.email || "").toLowerCase() === user.email.toLowerCase());
     body.innerHTML = `<h2 class="font-display">Đơn hàng</h2>` +
       (orders.length
         ? orders
             .map(
-              (o) => `<div class="cart-item" style="grid-template-columns:1fr auto;margin-top:12px">
-                <div><b>${o.id}</b><div class="muted">${o.date} · ${o.items.length} sản phẩm</div></div>
-                <div><span class="status st-wait">${o.status}</span><div class="price">${money(o.total)}</div></div>
-              </div>`
+              (o) => `<article class="account-order">
+                <div class="account-order-head"><div><b>${o.id}</b><div class="muted">${o.date} · ${(o.items || []).length} sản phẩm</div></div>
+                  <div><span class="status ${o.status === "Đã giao" ? "st-done" : o.status === "Đang giao" ? "st-ship" : o.status === "Đã hủy" ? "st-cancel" : "st-wait"}">${o.status}</span><div class="price">${money(o.total)}</div></div>
+                </div>
+                <details><summary>Xem chi tiết đơn hàng</summary>
+                  <div class="account-order-items">${(o.items || []).map((item) => `<div><span>${item.name} × ${item.quantity}</span><b>${money(item.price * item.quantity)}</b></div>`).join("")}</div>
+                  <p class="muted">Giao đến: ${o.address || "—"} · ${o.phone || "—"}</p>
+                  <p class="muted">Thanh toán: ${o.payment === "COD" ? "Tiền mặt khi nhận hàng" : o.payment === "Bank" ? "Chuyển khoản" : "Thanh toán trực tuyến"} · ${o.status}</p>
+                </details>
+              </article>`
             )
             .join("")
-        : `<p class="muted" style="margin-top:12px">Chưa có đơn hàng.</p>`);
+        : `<p class="muted" style="margin-top:12px">Bạn chưa có đơn hàng nào.</p>`);
   }
 }
 
 function saveProfile(e) {
   e.preventDefault();
   const form = new FormData(e.target);
-  setUser({
-    name: form.get("name"),
-    email: form.get("email"),
-    phone: form.get("phone"),
-    address: form.get("address"),
-  });
+  const current = getUser();
+  const address = form.get("address").toString().trim();
+  const addresses = [...new Set([address, ...form.get("addresses").toString().split(/\r?\n/).map((item) => item.trim()).filter(Boolean)])];
+  const user = { ...current, name: form.get("name").toString().trim(), phone: form.get("phone").toString().trim(), address, addresses };
+  setUser(user);
+  const accounts = readStored(KEYS.customerAccounts, []);
+  const account = accounts.find((item) => item.email === current.email.toLowerCase());
+  if (account) {
+    account.name = user.name;
+    account.phone = user.phone;
+    account.address = user.address;
+    account.addresses = user.addresses;
+    writeStored(KEYS.customerAccounts, accounts);
+  }
   renderHeader(window.__activeNav);
   toast("Đã lưu hồ sơ");
   closeOverlays();
@@ -373,7 +468,10 @@ function initShop(active) {
   renderFooter();
   renderModals();
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".header-actions")) document.getElementById("user-menu")?.classList.add("hidden");
+    if (!e.target.closest(".account-menu-wrap")) closeUserMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeUserMenu();
   });
 }
 

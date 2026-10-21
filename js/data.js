@@ -257,7 +257,56 @@ const KEYS = {
   user: "cothom-user",
   orders: "cothom-orders",
   admin: "cothom-admin",
+  categories: "cothom-custom-categories",
+  categoryLabels: "cothom-category-labels",
+  categoryHidden: "cothom-category-hidden",
+  categoryDeleted: "cothom-category-deleted",
+  receipts: "cothom-stock-receipts",
+  stockMovements: "cothom-stock-movements",
+  categoryMargins: "cothom-category-margins",
+  customerAccounts: "cothom-customer-accounts",
+  customerFlags: "cothom-customer-flags",
+  adminOrderOverrides: "cothom-admin-order-overrides",
 };
+
+function readStored(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : JSON.parse(value);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function writeStored(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getCategoryList(includeHidden) {
+  const custom = readStored(KEYS.categories, []);
+  const labels = readStored(KEYS.categoryLabels, {});
+  const hidden = readStored(KEYS.categoryHidden, {});
+  const deleted = readStored(KEYS.categoryDeleted, {});
+  const all = [
+    ...CATEGORIES.map((id) => ({
+      id,
+      label: labels[id] || CATEGORY_LABELS[id],
+      image: (CATEGORY_META[id] || {}).image || CATEGORY_META.Skincare.image,
+      tagline: (CATEGORY_META[id] || {}).tagline || "Khám phá bộ sưu tập",
+      hidden: Boolean(hidden[id]),
+      deleted: Boolean(deleted[id]),
+      builtIn: true,
+    })),
+    ...custom.map((category) => ({ ...category, hidden: Boolean(hidden[category.id]), deleted: false, builtIn: false })),
+  ];
+  return includeHidden ? all : all.filter((category) => !category.hidden && !category.deleted);
+}
+
+function categoryLabel(id) {
+  const labels = readStored(KEYS.categoryLabels, {});
+  const category = getCategoryList(true).find((item) => item.id === id);
+  return (category && category.label) || labels[id] || CATEGORY_LABELS[id] || id;
+}
 
 function loadProducts() {
   try {
