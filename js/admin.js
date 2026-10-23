@@ -1,3 +1,5 @@
+const ADMIN_EMAIL = "admin@cothom.vn";
+const ADMIN_PASS = "Admin@123";
 const LOW_STOCK_LIMIT = 10;
 
 const demoOrders = [
@@ -29,6 +31,9 @@ let orderDateTo = "";
 let inventoryDateFrom = "";
 let inventoryDateTo = "";
 
+function isAdmin() {
+  return sessionStorage.getItem(KEYS.admin) === "yes";
+}
 
 function statusClass(status) {
   if (status === "Đã giao" || status === "Hoàn thành") return "st-done";
@@ -40,25 +45,17 @@ function statusClass(status) {
 function renderAdmin() {
   const root = document.getElementById("admin-root");
   if (!isAdmin()) {
-    const user = getUser();
-    const isRegular = user && user.email && user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase();
     root.innerHTML = `<div class="admin-login">
       <div class="modal">
         <p class="kicker">Cỏ Thơm</p>
         <h2 class="font-display">Đăng nhập quản trị</h2>
-        <div style="background:#fff1f2;border:1px solid #fecdd3;color:#be123c;padding:10px 14px;border-radius:8px;font-size:13px;margin:12px 0 16px;text-align:left">
-          🔒 <b>Khu vực giới hạn:</b> Yêu cầu quyền quản trị viên để truy cập trang này.
-          ${isRegular ? `<div style="margin-top:6px;color:#9f1239">Tài khoản hiện tại (<b>${user.email}</b>) không có quyền quản trị.</div>` : ""}
-        </div>
+        <p class="muted" style="margin-bottom:12px">admin@cothom.vn / Admin@123</p>
         <form onsubmit="adminLogin(event)">
-          <div class="field"><label>Email quản trị</label><input name="email" type="email" value="${ADMIN_EMAIL}" required></div>
-          <div class="field"><label>Mật khẩu</label><input name="password" type="password" placeholder="Admin@123" required></div>
-          <button class="btn btn-rose" style="width:100%;margin-top:6px" type="submit">Đăng nhập Quản trị</button>
+          <div class="field"><label>Email</label><input name="email" type="email" required></div>
+          <div class="field"><label>Mật khẩu</label><input name="password" type="password" required></div>
+          <button class="btn btn-rose" style="width:100%" type="submit">Đăng nhập</button>
         </form>
-        <div style="display:flex;gap:10px;margin-top:12px">
-          <button class="btn-outline" style="flex:1;font-size:13px" onclick="location.href='index.html?auth=admin'">Đăng nhập tại trang chính</button>
-          <button class="btn-ghost" style="flex:1;font-size:13px" onclick="location.href='index.html'">← Về cửa hàng</button>
-        </div>
+        <button class="btn-ghost" style="margin-top:10px" onclick="location.href='index.html'">← Về cửa hàng</button>
       </div>
     </div>`;
     return;
@@ -138,33 +135,16 @@ function setView(nextView) {
 function adminLogin(e) {
   e.preventDefault();
   const form = new FormData(e.target);
-  const email = (form.get("email") || "").toString().trim().toLowerCase();
-  const password = (form.get("password") || "").toString();
-  if (email !== ADMIN_EMAIL.toLowerCase() || password !== ADMIN_PASS) {
-    toast("Sai tài khoản hoặc mật khẩu quản trị");
+  if (form.get("email").toLowerCase() !== ADMIN_EMAIL || form.get("password") !== ADMIN_PASS) {
+    toast("Sai tài khoản quản trị");
     return;
   }
   sessionStorage.setItem(KEYS.admin, "yes");
-  const adminUser = {
-    name: "Quản trị viên",
-    email: ADMIN_EMAIL,
-    role: "admin",
-    phone: "",
-    address: "",
-    addresses: [],
-  };
-  setUser(adminUser);
-  toast("Đăng nhập quản trị thành công");
   renderAdmin();
 }
 
 function adminLogout() {
   sessionStorage.removeItem(KEYS.admin);
-  const user = getUser();
-  if (user && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-    setUser(null);
-  }
-  toast("Đã đăng xuất quản trị");
   renderAdmin();
 }
 
@@ -668,7 +648,7 @@ function receiptLineHtml(item) {
   return `<div class="receipt-line admin-filters">
     <label>Sản phẩm<select name="productId" required>${loadProducts().map((product) => `<option value="${product.id}" ${String(item.productId) === String(product.id) ? "selected" : ""}>${product.name}</option>`).join("")}</select></label>
     <label>Số lượng<input name="quantity" type="number" min="1" value="${item.quantity}" required></label>
-    <label>Giá nhập / đơn vị<input name="costPrice" type="number" min="0" value="${item.costPrice}" required></label>
+    <label>Giá nhập<input name="costPrice" type="number" min="0" value="${item.costPrice}" required></label>
     <button class="btn-ghost" type="button" onclick="removeReceiptLine(this)">Xóa</button>
   </div>`;
 }

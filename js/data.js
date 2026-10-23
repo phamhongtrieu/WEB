@@ -269,17 +269,6 @@ const KEYS = {
   adminOrderOverrides: "cothom-admin-order-overrides",
 };
 
-const ADMIN_EMAIL = "admin@cothom.vn";
-const ADMIN_PASS = "Admin@123";
-
-function isAdmin() {
-  try {
-    return sessionStorage.getItem(KEYS.admin) === "yes";
-  } catch (e) {
-    return false;
-  }
-}
-
 function readStored(key, fallback) {
   try {
     const value = localStorage.getItem(key);

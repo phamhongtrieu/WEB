@@ -126,7 +126,7 @@ a { color: inherit; text-decoration: none; }
 .user-menu {
   position: absolute;
   right: 0;
-  top: 46px;
+  top: 100%;
   width: 220px;
   background: #fff;
   border: 1px solid var(--border);
