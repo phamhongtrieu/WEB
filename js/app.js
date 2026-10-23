@@ -22,24 +22,17 @@ function cartCount() {
 }
 
 function addToCart(productId, qty, goToCartAfterAdd) {
-  const user = getUser();
-  if (!user) {
-    pendingCartAction = { productId, quantity: qty || 1, goToCart: Boolean(goToCartAfterAdd) };
-    openAuth("login");
-    toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
-    return false;
-  }
   const product = getProductById(productId);
   if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
     toast("Sản phẩm hiện không được bán.");
-    return;
+    return false;
   }
   const cart = getCart();
   const found = cart.find((i) => i.productId === productId);
   const nextQty = (found ? found.quantity : 0) + (qty || 1);
   if (nextQty > product.stock) {
     toast("Không đủ hàng trong kho.");
-    return;
+    return false;
   }
   if (found) found.quantity = nextQty;
   else cart.push({ productId, quantity: qty || 1 });
@@ -156,32 +149,36 @@ function updateCartBadge() {
 
 function renderHeader(active) {
   const user = getUser();
+  const isAdminSession = sessionStorage.getItem(KEYS.admin) === "yes" || (user && user.role === "admin");
   const host = document.getElementById("site-header");
   if (!host) return;
   host.innerHTML = `
-    <div class="announce">MIỄN PHÍ VẬN CHUYỂN ĐƠN TỪ 600.000₫ &nbsp;·&nbsp; MÃ <b>GLOW20</b> GIẢM 20%</div>
+    <div class="announce">MIỄN PHÍ VẬN CHUYỂN CHO MỌI ĐƠN HÀNG TỪ 600.000₫</div>
     <header class="site-header">
       <div class="header-inner">
         <button class="icon-btn menu-btn" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
         <button class="logo" onclick="location.href='index.html'">CỎ THƠM</button>
         <nav class="nav-desk">
           ${getCategoryList().map(
-            (c) => `<button class="${active === c.id ? "active" : ""}" onclick="goCatalog('${c.id}')">${c.label}</button>`
-          ).join("")}
+    (c) => `<button class="${active === c.id ? "active" : ""}" onclick="goCatalog('${c.id}')">${c.label}</button>`
+  ).join("")}
         </nav>
         <div class="header-actions">
           <button class="icon-btn" onclick="toggleSearch()" aria-label="Tìm kiếm">⌕</button>
           <div class="account-menu-wrap" style="position:relative" onmouseenter="openUserMenu()" onmouseleave="closeUserMenu()">
             <button class="icon-btn" onclick="toggleUserMenu()" aria-label="Tài khoản" aria-haspopup="true" aria-expanded="false">👤</button>
             <div id="user-menu" class="user-menu hidden">
-              ${
-                user
-                  ? `<button onclick="openAccount('profile')">Xin chào, ${user.name}</button>
-                     <button onclick="openAccount('orders')">Đơn hàng của tôi</button>
-                     <button onclick="logout()">Đăng xuất</button>`
-                  : `<button onclick="openAuth('login')">Đăng nhập</button>
+              ${user
+      ? isAdminSession
+        ? `<button onclick="location.href='admin.html'">Xin chào, ${user.name}</button>
+                       <button onclick="logout()">Đăng xuất</button>`
+        : `<button onclick="openAccount('profile')">Xin chào, ${user.name}</button>
+                       <button onclick="openAccount('orders')">Đơn hàng của tôi</button>
+                       <button onclick="openAccount('profile')">Hồ sơ</button>
+                       <button onclick="logout()">Đăng xuất</button>`
+      : `<button onclick="openAuth('login')">Đăng nhập</button>
                      <button onclick="openAuth('register')">Tạo tài khoản</button>`
-              }
+    }
               <a href="admin.html">Trang quản trị</a>
             </div>
           </div>
@@ -241,8 +238,9 @@ function renderModals() {
   if (document.getElementById("auth-overlay")) return;
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <div id="auth-overlay" class="overlay hidden" onclick="if(event.target===this)closeOverlays()">
-      <div class="modal">
+    <div id="auth-overlay" class="overlay hidden">
+      <div class="modal" style="position:relative">
+        <button class="btn-ghost modal-close" type="button" onclick="closeOverlays()" style="position:absolute;top:16px;right:18px;font-size:20px;cursor:pointer">✕</button>
         <div class="tabs">
           <button id="tab-login" class="active" onclick="openAuth('login')">Đăng nhập</button>
           <button id="tab-register" onclick="openAuth('register')">Đăng ký</button>
@@ -297,11 +295,7 @@ function closeUserMenu() {
   menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", "false");
 }
 function openCart() {
-  if (getUser()) return true;
-  window.__cartPage = true;
-  openAuth("login");
-  toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
-  return false;
+  return true;
 }
 function goCatalog(cat) {
   location.href = "index.html?view=catalog" + (cat ? "&cat=" + encodeURIComponent(cat) : "");
@@ -360,22 +354,24 @@ function submitAuth(e) {
   setUser(user);
   closeOverlays();
   renderHeader(window.__activeNav);
-  toast(isRegister ? "Đăng ký thành công" : "Đăng nhập thành công");
+  toast(isRegister ? "Đăng ký thành công!" : "Đăng nhập thành công!");
   if (pendingCartAction) {
     const action = pendingCartAction;
     pendingCartAction = null;
     addToCart(action.productId, action.quantity, action.goToCart);
   }
-  if (window.__cartPage && typeof renderCart === "function") {
-    window.__cartPage = false;
+  if (typeof renderCart === "function") {
     renderCart();
-  } else if (window.__cartPage) {
-    location.href = "gio-hang.html";
+  }
+  if (typeof openCheckout === "function" && getCart().length > 0) {
+    openCheckout();
   }
 }
 
 function logout() {
   setUser(null);
+  localStorage.removeItem(KEYS.user);
+  sessionStorage.removeItem(KEYS.admin);
   closeOverlays();
   renderHeader(window.__activeNav);
   if (typeof renderCart === "function") renderCart();
@@ -410,8 +406,8 @@ function openAccount(tab) {
     body.innerHTML = `<h2 class="font-display">Đơn hàng</h2>` +
       (orders.length
         ? orders
-            .map(
-              (o) => `<article class="account-order">
+          .map(
+            (o) => `<article class="account-order">
                 <div class="account-order-head"><div><b>${o.id}</b><div class="muted">${o.date} · ${(o.items || []).length} sản phẩm</div></div>
                   <div><span class="status ${o.status === "Đã giao" ? "st-done" : o.status === "Đang giao" ? "st-ship" : o.status === "Đã hủy" ? "st-cancel" : "st-wait"}">${o.status}</span><div class="price">${money(o.total)}</div></div>
                 </div>
@@ -421,8 +417,8 @@ function openAccount(tab) {
                   <p class="muted">Thanh toán: ${o.payment === "COD" ? "Tiền mặt khi nhận hàng" : o.payment === "Bank" ? "Chuyển khoản" : "Thanh toán trực tuyến"} · ${o.status}</p>
                 </details>
               </article>`
-            )
-            .join("")
+          )
+          .join("")
         : `<p class="muted" style="margin-top:12px">Bạn chưa có đơn hàng nào.</p>`);
   }
 }

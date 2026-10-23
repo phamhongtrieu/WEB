@@ -140,11 +140,13 @@ function adminLogin(e) {
     return;
   }
   sessionStorage.setItem(KEYS.admin, "yes");
+  setUser({ name: "An Nhiên (Admin)", email: ADMIN_EMAIL, role: "admin" });
   renderAdmin();
 }
 
 function adminLogout() {
   sessionStorage.removeItem(KEYS.admin);
+  localStorage.removeItem(KEYS.user);
   renderAdmin();
 }
 
