@@ -22,6 +22,13 @@ function cartCount() {
 }
 
 function addToCart(productId, qty, goToCartAfterAdd) {
+  const user = getUser();
+  if (!user) {
+    pendingCartAction = { productId, quantity: qty || 1, goToCart: Boolean(goToCartAfterAdd) };
+    openAuth("login");
+    toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
+    return false;
+  }
   const product = getProductById(productId);
   if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
     toast("Sản phẩm hiện không được bán.");
@@ -65,7 +72,6 @@ function getUser() {
   try {
     const user = JSON.parse(localStorage.getItem(KEYS.user) || "null");
     if (!user || !user.email) return user;
-    if (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) return user;
     const flags = readStored(KEYS.customerFlags, {});
     return flags[user.email.toLowerCase()] && flags[user.email.toLowerCase()].locked ? null : user;
   } catch (e) {
@@ -172,11 +178,11 @@ function renderHeader(active) {
                 user
                   ? `<button onclick="openAccount('profile')">Xin chào, ${user.name}</button>
                      <button onclick="openAccount('orders')">Đơn hàng của tôi</button>
-                     ${isAdmin() ? `<a href="admin.html">Trang quản trị</a>` : ""}
                      <button onclick="logout()">Đăng xuất</button>`
                   : `<button onclick="openAuth('login')">Đăng nhập</button>
                      <button onclick="openAuth('register')">Tạo tài khoản</button>`
               }
+              <a href="admin.html">Trang quản trị</a>
             </div>
           </div>
           <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng" onclick="return openCart()">
@@ -249,7 +255,7 @@ function renderModals() {
           <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="6"></div>
           <button class="btn btn-rose" style="width:100%;margin-top:8px" type="submit">Tiếp tục</button>
         </form>
-        <p class="muted" style="margin-top:12px;font-size:12px">Tài khoản quản trị: admin@cothom.vn / Admin@123</p>
+        <p class="muted" style="margin-top:12px;font-size:12px">Tài khoản demo được lưu trên trình duyệt này. Admin: admin.html</p>
       </div>
     </div>
     <div id="account-overlay" class="overlay hidden" onclick="if(event.target===this)closeOverlays()">
@@ -291,7 +297,11 @@ function closeUserMenu() {
   menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", "false");
 }
 function openCart() {
-  return true;
+  if (getUser()) return true;
+  window.__cartPage = true;
+  openAuth("login");
+  toast("Đăng nhập hoặc tạo tài khoản để sử dụng giỏ hàng.");
+  return false;
 }
 function goCatalog(cat) {
   location.href = "index.html?view=catalog" + (cat ? "&cat=" + encodeURIComponent(cat) : "");
@@ -302,7 +312,7 @@ function submitSearch(e) {
   location.href = "index.html?view=catalog&q=" + encodeURIComponent(q);
 }
 
-function openAuth(mode, message) {
+function openAuth(mode) {
   renderModals();
   document.getElementById("user-menu")?.classList.add("hidden");
   openOverlay("auth-overlay");
@@ -312,8 +322,7 @@ function openAuth(mode, message) {
   document.getElementById("name-field").style.display = isReg ? "block" : "none";
   document.querySelector("#auth-overlay [name='name']").required = isReg;
   document.getElementById("auth-title").textContent = isReg ? "Tạo tài khoản" : "Chào mừng trở lại";
-  const defaultSub = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
-  document.getElementById("auth-sub").textContent = message || (window.__pendingCheckout ? "Vui lòng đăng nhập để tiến hành thanh toán." : defaultSub);
+  document.getElementById("auth-sub").textContent = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
   window.__authMode = mode;
 }
 
@@ -323,32 +332,6 @@ function submitAuth(e) {
   const email = form.get("email").toString().trim().toLowerCase();
   const password = form.get("password").toString();
   const isRegister = window.__authMode === "register";
-
-  if (email === ADMIN_EMAIL.toLowerCase()) {
-    if (isRegister) {
-      toast("Email này dành riêng cho quản trị viên.");
-      return;
-    }
-    if (password !== ADMIN_PASS) {
-      toast("Mật khẩu quản trị không đúng.");
-      return;
-    }
-    sessionStorage.setItem(KEYS.admin, "yes");
-    const adminUser = {
-      name: "Quản trị viên",
-      email: ADMIN_EMAIL,
-      role: "admin",
-      phone: "",
-      address: "",
-      addresses: [],
-    };
-    setUser(adminUser);
-    closeOverlays();
-    toast("Đăng nhập quản trị thành công");
-    location.href = "admin.html";
-    return;
-  }
-
   const accounts = readStored(KEYS.customerAccounts, []);
   const existing = accounts.find((account) => account.email === email);
   const flags = readStored(KEYS.customerFlags, {});
@@ -374,9 +357,6 @@ function submitAuth(e) {
     address: (existing && existing.address) || "",
     addresses: (existing && existing.addresses) || [],
   };
-  sessionStorage.removeItem(KEYS.admin);
-  const pendingCheckout = window.__pendingCheckout;
-  window.__pendingCheckout = false;
   setUser(user);
   closeOverlays();
   renderHeader(window.__activeNav);
@@ -386,20 +366,15 @@ function submitAuth(e) {
     pendingCartAction = null;
     addToCart(action.productId, action.quantity, action.goToCart);
   }
-  if (typeof renderCart === "function") {
+  if (window.__cartPage && typeof renderCart === "function") {
     window.__cartPage = false;
     renderCart();
   } else if (window.__cartPage) {
-    window.__cartPage = false;
     location.href = "gio-hang.html";
-  }
-  if (pendingCheckout && typeof openCheckout === "function") {
-    openCheckout();
   }
 }
 
 function logout() {
-  sessionStorage.removeItem(KEYS.admin);
   setUser(null);
   closeOverlays();
   renderHeader(window.__activeNav);
@@ -498,10 +473,6 @@ function initShop(active) {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeUserMenu();
   });
-  const p = params();
-  if (p.get("auth") === "admin") {
-    openAuth("login", "Vui lòng đăng nhập với tài khoản Quản trị viên để truy cập trang quản trị.");
-  }
 }
 
 function params() {
