@@ -1,11 +1,17 @@
 const ADMIN_EMAIL = "admin@cothom.vn";
 const ADMIN_PASS = "Admin@123";
 const LOW_STOCK_LIMIT = 10;
+const ORDER_STATUSES = ["Mới đặt", "Đã xử lý", "Đã giao", "Đã hủy"];
+// Trạng thái được phép chuyển tiếp. Đơn đã giao hoặc đã hủy thì không đổi nữa.
+const NEXT_STATUS = {
+  "Mới đặt": ["Đã xử lý", "Đã hủy"],
+  "Đã xử lý": ["Đã giao", "Đã hủy"],
+};
 
 const demoOrders = [
-  { id: "#CT-1048", customer: "Nguyễn Minh Anh", email: "minhanh@gmail.com", phone: "0901 234 567", address: "24 Nguyễn Huệ, Q.1, TP.HCM", product: "Serum Rạng Rỡ Luminous", date: "24 Thg 5, 2026", total: 890000, status: "Đang xử lý", items: [{ name: "Serum Rạng Rỡ Luminous", quantity: 1, price: 890000 }] },
+  { id: "#CT-1048", customer: "Nguyễn Minh Anh", email: "minhanh@gmail.com", phone: "0901 234 567", address: "24 Nguyễn Huệ, Q.1, TP.HCM", product: "Serum Rạng Rỡ Luminous", date: "24 Thg 5, 2026", total: 890000, status: "Mới đặt", items: [{ name: "Serum Rạng Rỡ Luminous", quantity: 1, price: 890000 }] },
   { id: "#CT-1047", customer: "Trần Ngọc Mai", email: "ngocmai@gmail.com", phone: "0988 456 123", address: "18 Lê Lợi, Hải Châu, Đà Nẵng", product: "Kem Dưỡng Ẩm Hydra-Boost", date: "24 Thg 5, 2026", total: 1300000, status: "Đã giao", items: [{ name: "Kem Dưỡng Ẩm Hydra-Boost", quantity: 2, price: 650000 }] },
-  { id: "#CT-1046", customer: "Lê Thanh Hà", email: "thanhha@gmail.com", phone: "0912 888 302", address: "57 Tràng Thi, Hoàn Kiếm, Hà Nội", product: "Nước Hoa Rose Oud", date: "23 Thg 5, 2026", total: 1450000, status: "Đang giao", items: [{ name: "Nước Hoa Rose Oud", quantity: 1, price: 1450000 }] },
+  { id: "#CT-1046", customer: "Lê Thanh Hà", email: "thanhha@gmail.com", phone: "0912 888 302", address: "57 Tràng Thi, Hoàn Kiếm, Hà Nội", product: "Nước Hoa Rose Oud", date: "23 Thg 5, 2026", total: 1450000, status: "Đã xử lý", items: [{ name: "Nước Hoa Rose Oud", quantity: 1, price: 1450000 }] },
   { id: "#CT-1045", customer: "Phạm Gia Hân", email: "giahan@gmail.com", phone: "0935 777 810", address: "102 Hai Bà Trưng, Cần Thơ", product: "Xịt Khoáng Cánh Hồng", date: "23 Thg 5, 2026", total: 420000, status: "Đã giao", items: [{ name: "Xịt Khoáng Cánh Hồng", quantity: 1, price: 420000 }] },
   { id: "#CT-1044", customer: "Vũ Khánh Linh", email: "", phone: "", address: "", product: "Mặt Nạ Tóc Phục Hồi", date: "22 Thg 5, 2026", total: 760000, status: "Đã hủy", items: [{ name: "Mặt Nạ Tóc Phục Hồi", quantity: 1, price: 760000 }] },
 ];
@@ -30,16 +36,10 @@ let orderDateFrom = "";
 let orderDateTo = "";
 let inventoryDateFrom = "";
 let inventoryDateTo = "";
+let inventoryAtDate = "";
 
 function isAdmin() {
   return sessionStorage.getItem(KEYS.admin) === "yes";
-}
-
-function statusClass(status) {
-  if (status === "Đã giao" || status === "Hoàn thành") return "st-done";
-  if (status === "Đang giao") return "st-ship";
-  if (status === "Đã hủy") return "st-cancel";
-  return "st-wait";
 }
 
 function renderAdmin() {
@@ -129,6 +129,7 @@ function setView(nextView) {
   orderDateTo = "";
   inventoryDateFrom = "";
   inventoryDateTo = "";
+  inventoryAtDate = "";
   renderAdmin();
 }
 
@@ -187,7 +188,7 @@ function orderDateISO(order) {
   const match = String(order.date || "").match(/(\d{1,2})\s+Thg\s+(\d{1,2}),?\s+(\d{4})/i);
   if (match) return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
   const date = new Date(order.date);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+  return Number.isNaN(date.getTime()) ? "" : dateToISO(date);
 }
 
 function ordersForAdmin() {
@@ -197,12 +198,13 @@ function ordersForAdmin() {
     customer: order.name,
     product: (order.items && order.items[0] && order.items[0].name) || "Đơn mới",
     dateISO: orderDateISO(order),
+    status: orderStatus(order.status),
     isLive: true,
   }));
   const examples = demoOrders.map((order) => ({
     ...order,
     dateISO: orderDateISO(order),
-    status: overrides[order.id] || order.status,
+    status: orderStatus(overrides[order.id] || order.status),
     isLive: false,
   }));
   return [...live, ...examples];
@@ -214,9 +216,8 @@ function orderTable(list) {
     <tbody>${list.map((order) => `<tr>
       <td><b>${order.id}</b></td><td>${order.customer || order.name || "—"}<div class="muted">${order.email || ""}</div></td>
       <td>${order.product || (order.items || []).map((item) => item.name).join(", ") || "—"}</td><td>${order.date}</td>
-      <td>${money(order.total)}</td><td><select aria-label="Trạng thái đơn ${order.id}" onchange="updateOrderStatus('${order.id}',this.value)">
-        ${["Đang xử lý", "Đang giao", "Đã giao", "Đã hủy"].map((status) => `<option ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}
-      </select></td><td><button class="btn-ghost" onclick="openOrderDetails('${order.id}')">Chi tiết</button></td>
+      <td>${money(order.total)}</td><td><span class="status ${statusClass(order.status)}">${order.status}</span></td>
+      <td><button class="btn-ghost" onclick="openOrderDetails('${order.id}')">Chi tiết</button></td>
     </tr>`).join("") || `<tr><td colspan="7" class="muted">Chưa có đơn hàng phù hợp.</td></tr>`}</tbody>
   </table></div>`;
 }
@@ -234,27 +235,28 @@ function ordersHtml() {
     <label>Từ ngày <input type="date" value="${orderDateFrom}" onchange="orderDateFrom=this.value;document.getElementById('admin-view').innerHTML=viewHtml()"></label>
     <label>Đến ngày <input type="date" value="${orderDateTo}" onchange="orderDateTo=this.value;document.getElementById('admin-view').innerHTML=viewHtml()"></label>
     <label>Trạng thái <select onchange="orderStatusFilter=this.value;document.getElementById('admin-view').innerHTML=viewHtml()">
-      <option value="">Tất cả trạng thái</option>${["Đang xử lý", "Đang giao", "Đã giao", "Đã hủy"].map((status) => `<option ${orderStatusFilter === status ? "selected" : ""}>${status}</option>`).join("")}
+      <option value="">Tất cả trạng thái</option>${ORDER_STATUSES.map((status) => `<option ${orderStatusFilter === status ? "selected" : ""}>${status}</option>`).join("")}
     </select></label>
     <button class="btn-outline" onclick="orderDateFrom='';orderDateTo='';orderStatusFilter='';renderAdmin()">Xóa bộ lọc</button>
   </div>${orderTable(orders)}`;
 }
 
 function updateOrderStatus(id, status) {
+  const current = ordersForAdmin().find((item) => item.id === id);
+  const allowed = current ? NEXT_STATUS[current.status] || [] : [];
+  if (!allowed.includes(status)) {
+    toast("Không thể chuyển đơn sang trạng thái này");
+    return;
+  }
   const orders = getOrders();
   const order = orders.find((item) => item.id === id);
   if (order) {
-    const wasCancelled = order.status === "Đã hủy";
     order.status = status;
-    if (!wasCancelled && status === "Đã hủy") adjustOrderStock(order, 1);
-    else if (wasCancelled && status !== "Đã hủy" && !adjustOrderStock(order, -1)) {
-      order.status = "Đã hủy";
-      toast("Không đủ tồn kho để khôi phục đơn này.");
-      renderAdmin();
-      return;
-    }
+    // Hàng đã trừ kho lúc khách đặt, nên hủy đơn thì trả hàng về kho.
+    if (status === "Đã hủy") returnOrderStock(order);
     saveOrders(orders);
   } else {
+    // Đơn mẫu không nằm trong localStorage nên chỉ lưu trạng thái mới.
     const overrides = readStored(KEYS.adminOrderOverrides, {});
     overrides[id] = status;
     writeStored(KEYS.adminOrderOverrides, overrides);
@@ -263,31 +265,25 @@ function updateOrderStatus(id, status) {
   renderAdmin();
 }
 
-function adjustOrderStock(order, direction) {
+function returnOrderStock(order) {
   const products = loadProducts();
-  const items = order.items || [];
-  if (direction < 0 && items.some((item) => {
-    const product = products.find((entry) => String(entry.id) === String(item.productId));
-    return !product || product.stock < item.quantity;
-  })) return false;
   const movements = readStored(KEYS.stockMovements, []);
-  for (const item of items) {
+  for (const item of order.items || []) {
     const product = products.find((entry) => String(entry.id) === String(item.productId));
     if (!product) continue;
-    product.stock -= direction * Number(item.quantity || 0);
+    product.stock += Number(item.quantity || 0);
     movements.unshift({
       id: "ADJ-" + Date.now() + "-" + item.productId,
       productId: product.id,
       productName: product.name,
       quantity: item.quantity,
-      type: direction > 0 ? "Hoàn đơn" : "Xuất bán",
-      date: new Date().toISOString().slice(0, 10),
+      type: "Hoàn đơn",
+      date: todayISO(),
       reference: order.id,
     });
   }
   saveProducts(products);
   writeStored(KEYS.stockMovements, movements);
-  return true;
 }
 
 function openOrderDetails(id) {
@@ -307,7 +303,21 @@ function orderDetailsHtml(id) {
     <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Sản phẩm</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
       <tbody>${(order.items || []).map((item) => `<tr><td>${item.name || getProductById(item.productId)?.name || "Sản phẩm"}</td><td>${item.quantity}</td><td>${money(item.price)}</td><td>${money(item.price * item.quantity)}</td></tr>`).join("")}</tbody>
     </table></div>
+    ${orderStatusFormHtml(order)}
   </div></div>`;
+}
+
+function orderStatusFormHtml(order) {
+  const nextStatuses = NEXT_STATUS[order.status];
+  if (!nextStatuses) {
+    return `<p class="muted" style="margin-top:16px">Đơn hàng ${order.status.toLowerCase()} nên không thể cập nhật tình trạng nữa.</p>`;
+  }
+  return `<div class="admin-filters" style="margin-top:16px">
+    <label>Cập nhật tình trạng
+      <select id="next-status">${nextStatuses.map((status) => `<option>${status}</option>`).join("")}</select>
+    </label>
+    <button class="btn btn-rose" onclick="updateOrderStatus('${order.id}', document.getElementById('next-status').value)">Cập nhật</button>
+  </div>`;
 }
 
 function getCustomers() {
@@ -564,7 +574,7 @@ function saveProduct(e) {
         productName: newProduct.name,
         quantity: newProduct.stock,
         type: "Tồn đầu kỳ",
-        date: new Date().toISOString().slice(0, 10),
+        date: todayISO(),
         reference: newProduct.sku,
       });
       writeStored(KEYS.stockMovements, movements);
@@ -624,7 +634,7 @@ function openReceiptForm(id) {
   const receipts = readStored(KEYS.receipts, []);
   receiptEditing = id ? receipts.find((receipt) => receipt.id === id && receipt.status === "Nháp") : {
     id: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: todayISO(),
     items: [{ productId: loadProducts()[0]?.id || "", quantity: 1, costPrice: 0 }],
   };
   if (!receiptEditing) {
@@ -812,6 +822,27 @@ function productStockTable(products) {
     ${products.map((product) => `<tr><td>${product.name}</td><td>${categoryLabel(product.category)}</td><td>${product.stock}</td><td><span class="status st-wait">Sắp hết hàng</span></td></tr>`).join("")}</tbody></table>`;
 }
 
+// Nhập hàng và hoàn đơn làm tăng tồn, xuất bán làm giảm tồn.
+function movementChange(movement) {
+  return (movement.type === "Xuất bán" ? -1 : 1) * Number(movement.quantity || 0);
+}
+
+// Tồn cuối một ngày = tồn hiện tại trừ đi các phát sinh xảy ra sau ngày đó.
+function stockOnDate(product, date, movements) {
+  return movements
+    .filter((movement) => String(movement.productId) === String(product.id) && movement.date > date)
+    .reduce((stock, movement) => stock - movementChange(movement), Number(product.stock || 0));
+}
+
+function matchesQuery(product) {
+  return `${product.name} ${product.sku}`.toLowerCase().includes(query.toLowerCase());
+}
+
+// "2026-10-24" → "24/10/2026"
+function formatISODate(iso) {
+  return iso.split("-").reverse().join("/");
+}
+
 function inventoryHtml() {
   const products = loadProducts();
   const categories = getCategoryList(true);
@@ -838,13 +869,13 @@ function inventoryHtml() {
     const quantityOut = periodMovements
       .filter((movement) => movement.type === "Xuất bán")
       .reduce((sum, movement) => sum + Number(movement.quantity || 0), 0);
-    const afterEnd = inventoryDateTo
-      ? productMovements.filter((movement) => movement.date > inventoryDateTo)
-      : [];
-    const laterNetChange = afterEnd.reduce((sum, movement) =>
-      sum + (movement.type === "Xuất bán" ? -1 : 1) * Number(movement.quantity || 0), 0);
-    return { product, quantityIn, quantityOut, closingStock: Number(product.stock || 0) - laterNetChange };
-  }).filter((item) => !query || `${item.product.name} ${item.product.sku}`.toLowerCase().includes(query.toLowerCase()));
+    const closingStock = inventoryDateTo ? stockOnDate(product, inventoryDateTo, allMovements) : Number(product.stock || 0);
+    // Tồn đầu kỳ + Nhập − Xuất = Tồn cuối kỳ
+    const openingStock = closingStock - quantityIn + quantityOut;
+    return { product, openingStock, quantityIn, quantityOut, closingStock };
+  }).filter((item) => matchesQuery(item.product));
+  const atDate = inventoryAtDate || todayISO();
+  const stockAtDate = stockProducts.filter(matchesQuery).map((product) => ({ product, stock: stockOnDate(product, atDate, allMovements) }));
   return `<div class="admin-filters">
     <label>Loại sản phẩm <select onchange="inventoryCategoryFilter=this.value;document.getElementById('admin-view').innerHTML=viewHtml()"><option value="">Tất cả loại</option>
       ${categories.map((category) => `<option value="${category.id}" ${inventoryCategoryFilter === category.id ? "selected" : ""}>${category.label}</option>`).join("")}</select></label>
@@ -856,9 +887,17 @@ function inventoryHtml() {
     <article class="stat"><p class="muted">Tổng số lượng tồn</p><h3>${stockProducts.reduce((sum, product) => sum + Number(product.stock || 0), 0)}</h3></article>
     <article class="stat"><p class="muted">Sắp hết hàng</p><h3>${low.length}</h3></article></div>
   <article class="stat"><h2 class="font-display">Cảnh báo sản phẩm sắp hết</h2>${low.length ? `<div class="table-wrap" style="margin-top:12px">${productStockTable(low)}</div>` : `<p class="muted" style="margin-top:8px">Không có sản phẩm sắp hết hàng.</p>`}</article>
+  <h2 class="font-display" style="margin:18px 0 10px">Tồn kho theo loại tại một thời điểm</h2>
+  <div class="admin-filters">
+    <label>Tại ngày <input type="date" value="${atDate}" max="${todayISO()}" onchange="inventoryAtDate=this.value;document.getElementById('admin-view').innerHTML=viewHtml()"></label>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Loại</th><th>Tồn cuối ngày ${formatISODate(atDate)}</th><th>Tình trạng</th></tr></thead>
+    <tbody>${stockAtDate.map(({ product, stock }) => `<tr><td>${product.name}</td><td>${categoryLabel(product.category)}</td><td>${stock}</td>
+      <td>${stock <= LOW_STOCK_LIMIT ? `<span class="status st-wait">Sắp hết hàng</span>` : `<span class="status st-done">Còn hàng</span>`}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">Không có sản phẩm phù hợp.</td></tr>`}</tbody></table></div>
   <h2 class="font-display" style="margin:18px 0 10px">Nhập – xuất – tồn theo thời gian</h2>
-  <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Loại</th><th>Nhập trong kỳ</th><th>Xuất trong kỳ</th><th>Tồn cuối kỳ</th></tr></thead>
-    <tbody>${summary.map(({ product, quantityIn, quantityOut, closingStock }) => `<tr><td>${product.name}</td><td>${categoryLabel(product.category)}</td><td>${quantityIn}</td><td>${quantityOut}</td><td>${closingStock}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">Không có sản phẩm phù hợp.</td></tr>`}</tbody></table></div>
+  <p class="muted" style="margin-bottom:10px">Chọn "Từ ngày" – "Đến ngày" ở bộ lọc phía trên. Gõ tên sản phẩm vào ô tìm kiếm để xem một sản phẩm.</p>
+  <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Loại</th><th>Tồn đầu kỳ</th><th>Nhập trong kỳ</th><th>Xuất trong kỳ</th><th>Tồn cuối kỳ</th></tr></thead>
+    <tbody>${summary.map(({ product, openingStock, quantityIn, quantityOut, closingStock }) => `<tr><td>${product.name}</td><td>${categoryLabel(product.category)}</td><td>${openingStock}</td><td>${quantityIn}</td><td>${quantityOut}</td><td>${closingStock}</td></tr>`).join("") || `<tr><td colspan="6" class="muted">Không có sản phẩm phù hợp.</td></tr>`}</tbody></table></div>
   <h3 class="font-display" style="margin:18px 0 10px">Chi tiết giao dịch kho</h3>
   <div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Sản phẩm</th><th>Loại giao dịch</th><th>Số lượng</th><th>Mã tham chiếu</th></tr></thead>
     <tbody>${movements.map((movement) => `<tr><td>${movement.date}</td><td>${movement.productName}</td><td>${movement.type}</td><td>${movement.type === "Xuất bán" ? "−" : "+"}${movement.quantity}</td><td>${movement.reference || "—"}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">Chưa có giao dịch kho trong khoảng thời gian này.</td></tr>`}</tbody></table></div>`;

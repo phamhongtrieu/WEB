@@ -22,6 +22,12 @@ function cartCount() {
 }
 
 function addToCart(productId, qty, goToCartAfterAdd) {
+  // Đề yêu cầu khách phải đăng nhập mới dùng được giỏ hàng.
+  if (!getUser()) {
+    toast("Vui lòng đăng nhập để mua hàng.");
+    openAuth("login");
+    return false;
+  }
   const product = getProductById(productId);
   if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
     toast("Sản phẩm hiện không được bán.");
@@ -355,6 +361,7 @@ function submitAuth(e) {
   closeOverlays();
   renderHeader(window.__activeNav);
   toast(isRegister ? "Đăng ký thành công!" : "Đăng nhập thành công!");
+  if (typeof renderCart === "function") renderCart();
   if (pendingCartAction) {
     const action = pendingCartAction;
     pendingCartAction = null;
@@ -366,6 +373,12 @@ function submitAuth(e) {
   if (typeof openCheckout === "function" && getCart().length > 0) {
     openCheckout();
   }
+}
+
+function paymentLabel(payment) {
+  if (payment === "COD") return "Tiền mặt khi nhận hàng";
+  if (payment === "Bank") return "Chuyển khoản";
+  return "Thanh toán trực tuyến";
 }
 
 function logout() {
@@ -402,19 +415,21 @@ function openAccount(tab) {
         <button class="btn btn-rose" type="submit">Lưu thay đổi</button>
       </form>`;
   } else {
-    const orders = getOrders().filter((order) => (order.email || "").toLowerCase() === user.email.toLowerCase());
+    const orders = getOrders()
+      .filter((order) => (order.email || "").toLowerCase() === user.email.toLowerCase())
+      .map((order) => ({ ...order, status: orderStatus(order.status) }));
     body.innerHTML = `<h2 class="font-display">Đơn hàng</h2>` +
       (orders.length
         ? orders
           .map(
             (o) => `<article class="account-order">
                 <div class="account-order-head"><div><b>${o.id}</b><div class="muted">${o.date} · ${(o.items || []).length} sản phẩm</div></div>
-                  <div><span class="status ${o.status === "Đã giao" ? "st-done" : o.status === "Đang giao" ? "st-ship" : o.status === "Đã hủy" ? "st-cancel" : "st-wait"}">${o.status}</span><div class="price">${money(o.total)}</div></div>
+                  <div><span class="status ${statusClass(o.status)}">${o.status}</span><div class="price">${money(o.total)}</div></div>
                 </div>
                 <details><summary>Xem chi tiết đơn hàng</summary>
                   <div class="account-order-items">${(o.items || []).map((item) => `<div><span>${item.name} × ${item.quantity}</span><b>${money(item.price * item.quantity)}</b></div>`).join("")}</div>
                   <p class="muted">Giao đến: ${o.address || "—"} · ${o.phone || "—"}</p>
-                  <p class="muted">Thanh toán: ${o.payment === "COD" ? "Tiền mặt khi nhận hàng" : o.payment === "Bank" ? "Chuyển khoản" : "Thanh toán trực tuyến"} · ${o.status}</p>
+                  <p class="muted">Thanh toán: ${paymentLabel(o.payment)} · ${o.status}</p>
                 </details>
               </article>`
           )

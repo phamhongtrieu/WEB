@@ -269,6 +269,30 @@ const KEYS = {
   adminOrderOverrides: "cothom-admin-order-overrides",
 };
 
+// Ngày dạng "yyyy-mm-dd" theo giờ Việt Nam (toISOString() dùng giờ UTC nên có thể lệch 1 ngày).
+function dateToISO(date) {
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+}
+
+function todayISO() {
+  return dateToISO(new Date());
+}
+
+// Đơn lưu trước khi sửa theo đề dùng tên trạng thái cũ, đổi sang tên mới.
+function orderStatus(status) {
+  if (status === "Đang xử lý") return "Mới đặt";
+  if (status === "Đang giao") return "Đã xử lý";
+  return status;
+}
+
+// Màu nhãn trạng thái, dùng chung cho trang admin và trang khách hàng.
+function statusClass(status) {
+  if (status === "Đã giao" || status === "Hoàn thành") return "st-done";
+  if (status === "Đã xử lý") return "st-ship";
+  if (status === "Đã hủy") return "st-cancel";
+  return "st-wait";
+}
+
 function readStored(key, fallback) {
   try {
     const value = localStorage.getItem(key);
