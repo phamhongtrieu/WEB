@@ -514,8 +514,9 @@ function openProductForm(id) {
 
 function productFormHtml() {
   const isNew = editing === "new";
-  const product = isNew ? { name: "", brand: "", category: "Skincare", sku: "", price: 0, costPrice: "", marginPercent: "", stock: 0, description: "" } : editing;
+  const product = isNew ? { name: "", brand: "", category: "Skincare", sku: "", price: 0, costPrice: "", marginPercent: "", stock: 0, description: "", images: [] } : editing;
   if (!product) return "";
+  const imageUrls = (product.images || []).map((url) => String(url).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")).join("\n");
   return `<div class="modal wide"><h2 class="font-display">${isNew ? "Thêm sản phẩm" : "Sửa sản phẩm"}</h2>
     <form onsubmit="saveProduct(event)">
       <div class="two-col"><div class="field"><label>Tên sản phẩm</label><input name="name" value="${product.name}" required></div>
@@ -527,6 +528,7 @@ function productFormHtml() {
       <div class="field"><label>Giá bán (VND)</label><input name="price" type="number" min="0" value="${product.price}" required></div>
       <div class="field"><label>${isNew ? "Tồn kho ban đầu" : "Tồn kho hiện tại"}</label><input name="stock" type="number" min="0" value="${product.stock}" ${isNew ? "" : "readonly"} required>
         ${isNew ? "" : `<small class="muted">Tồn kho chỉ thay đổi qua phiếu nhập và đơn hàng.</small>`}</div></div>
+      <div class="field"><label>Đường link ảnh sản phẩm</label><textarea name="images" rows="3" placeholder="https://example.com/anh-san-pham.jpg&#10;Mỗi đường link một dòng" required>${imageUrls}</textarea><small class="muted">Dán link ảnh trực tiếp bắt đầu bằng http:// hoặc https://. Có thể thêm nhiều ảnh, mỗi link một dòng.</small></div>
       <div class="field"><label>Mô tả</label><textarea name="description" rows="3">${product.description || ""}</textarea></div>
       <div class="actions"><button class="btn btn-rose" type="submit">Lưu sản phẩm</button><button class="btn-outline" type="button" onclick="editing=null;renderAdmin()">Hủy</button></div>
     </form></div>`;
@@ -536,6 +538,22 @@ function saveProduct(e) {
   e.preventDefault();
   const form = new FormData(e.target);
   const list = loadProducts();
+  const imageUrls = form.get("images").toString().split(/\r?\n/).map((url) => url.trim()).filter(Boolean);
+  const images = [];
+  for (const imageUrl of imageUrls) {
+    try {
+      const parsedUrl = new URL(imageUrl);
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") throw new Error("Invalid image URL protocol");
+      images.push(parsedUrl.href);
+    } catch {
+      toast("Mỗi đường link ảnh phải là URL bắt đầu bằng http:// hoặc https://");
+      return;
+    }
+  }
+  if (!images.length) {
+    toast("Vui lòng nhập ít nhất một đường link ảnh sản phẩm");
+    return;
+  }
   const draft = {
     name: form.get("name").toString().trim(),
     brand: form.get("brand").toString().trim(),
@@ -546,13 +564,14 @@ function saveProduct(e) {
     marginPercent: form.get("marginPercent") === "" ? null : Number(form.get("marginPercent")),
     stock: Number(form.get("stock")),
     description: form.get("description"),
+    images,
   };
   if (draft.price < 0 || draft.stock < 0 || draft.costPrice < 0 || (draft.marginPercent !== null && draft.marginPercent < 0)) {
     toast("Giá, tồn kho và biên lợi nhuận không được âm");
     return;
   }
   if (isNewProduct()) {
-    const newProduct = { ...draft, id: "p" + Date.now(), images: DEFAULT_PRODUCTS[0].images, rating: 0, reviews: 0, ingredients: "", directions: "", tags: [] };
+    const newProduct = { ...draft, id: "p" + Date.now(), rating: 0, reviews: 0, ingredients: "", directions: "", tags: [] };
     list.unshift(newProduct);
     if (newProduct.stock > 0) {
       const movements = readStored(KEYS.stockMovements, []);
@@ -609,12 +628,16 @@ function receiptsHtml() {
   const receipts = readStored(KEYS.receipts, []).filter((receipt) =>
     `${receipt.id} ${receipt.date} ${receipt.status}`.toLowerCase().includes(query.toLowerCase())
   );
-  return `<div class="table-wrap"><table><thead><tr><th>Mã phiếu</th><th>Ngày nhập</th><th>Sản phẩm</th><th>Tổng số lượng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-    <tbody>${receipts.map((receipt) => `<tr><td><b>${receipt.id}</b></td><td>${receipt.date}</td>
+  return `<div class="table-wrap"><table><thead><tr><th>Mã phiếu</th><th>Ngày nhập</th><th>Sản phẩm</th><th>Tổng số lượng</th><th>Tổng giá nhập</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody>${receipts.map((receipt) => {
+      const totalCost = receipt.items.reduce((sum, item) => sum + Number(item.costPrice || 0) * Number(item.quantity || 0), 0);
+      return `<tr><td><b>${receipt.id}</b></td><td>${receipt.date}</td>
       <td>${receipt.items.map((item) => `${item.name} × ${item.quantity}`).join("<br>")}</td>
       <td>${receipt.items.reduce((sum, item) => sum + Number(item.quantity), 0)}</td>
+      <td>${money(totalCost)}</td>
       <td><span class="status ${receipt.status === "Hoàn thành" ? "st-done" : "st-wait"}">${receipt.status}</span></td>
-      <td>${receipt.status === "Nháp" ? `<div class="admin-row-actions"><button class="btn-ghost" onclick="openReceiptForm('${receipt.id}')">Sửa</button><button class="btn-ghost" onclick="completeReceipt('${receipt.id}')">Hoàn thành</button><button class="btn-ghost" onclick="deleteReceipt('${receipt.id}')">Xóa</button></div>` : `<span class="muted">Đã ghi nhận kho</span>`}</td></tr>`).join("") || `<tr><td colspan="6" class="muted">Chưa có phiếu nhập hàng.</td></tr>`}</tbody></table></div>
+      <td>${receipt.status === "Nháp" ? `<div class="admin-row-actions"><button class="btn-ghost" onclick="openReceiptForm('${receipt.id}')">Sửa</button><button class="btn-ghost" onclick="completeReceipt('${receipt.id}')">Hoàn thành</button><button class="btn-ghost" onclick="deleteReceipt('${receipt.id}')">Xóa</button></div>` : `<span class="muted">Đã ghi nhận kho</span>`}</td></tr>`;
+    }).join("") || `<tr><td colspan="7" class="muted">Chưa có phiếu nhập hàng.</td></tr>`}</tbody></table></div>
     <p class="muted" style="margin-top:12px">Phiếu nháp có thể sửa; phiếu đã hoàn thành được khóa để bảo toàn lịch sử tồn kho.</p>`;
 }
 
