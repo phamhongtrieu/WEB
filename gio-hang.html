@@ -24,10 +24,16 @@
           <select name="payment" onchange="checkoutPaymentChanged(this.value)">
             <option value="COD">Tiền mặt khi nhận hàng (mặc định)</option>
             <option value="Bank">Chuyển khoản</option>
-            <option value="Online">Thanh toán trực tuyến</option>
           </select>
         </div>
         <p class="muted checkout-payment-note" id="checkout-payment-note">Thanh toán tiền mặt khi nhận hàng.</p>
+        <div class="rev hidden" id="checkout-bank-details">
+          <strong>Thông tin chuyển khoản</strong>
+          <p>Ngân hàng: Ngân hàng Demo (thông tin mẫu)</p>
+          <p>Số tài khoản: 0000000000</p>
+          <p>Chủ tài khoản: Trần Thanh Lam</p>
+          <p>Nội dung chuyển khoản: <strong id="checkout-transfer-content"></strong></p>
+        </div>
         <button class="btn btn-rose" style="width:100%" type="submit">Đặt hàng</button>
       </form>
     </div>
@@ -47,19 +53,11 @@
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
   <script>
-    function renderCart() {
+      let checkoutOrderId = null;
+
+      function renderCart() {
       const { items, subtotal, shipping, total } = cartTotals();
       const root = document.getElementById("cart-root");
-      if (!getUser()) {
-        root.innerHTML = `<div class="empty">
-          <div class="empty-icon">🔒</div>
-          <h2 class="font-display">Vui lòng đăng nhập để dùng giỏ hàng</h2>
-          <p class="muted" style="margin:10px 0 22px">Bạn cần có tài khoản và đăng nhập trước khi mua hàng.</p>
-          <button class="btn btn-rose" onclick="openAuth('login')">Đăng nhập</button>
-          <button class="btn-outline" onclick="openAuth('register')">Đăng ký</button>
-        </div>`;
-        return;
-      }
       if (!items.length) {
         root.innerHTML = `<div class="empty">
           <div class="empty-icon">👜</div>
@@ -108,14 +106,12 @@
       const user = getUser();
       if (!user) {
         openAuth("login");
-        toast("Vui lòng đăng nhập để tiến hành thanh toán.");
+        window.__checkoutPending = true;
+        document.getElementById("auth-sub").textContent = "Đăng nhập để tiếp tục thanh toán.";
         return;
       }
-      const { items, total } = cartTotals();
-      if (!items.length) {
-        toast("Giỏ hàng của bạn đang trống.");
-        return;
-      }
+      const { total } = cartTotals();
+      checkoutOrderId = "CT-" + Date.now().toString().slice(-6);
       document.getElementById("checkout-total").textContent = "Tổng thanh toán: " + money(total);
       const form = document.querySelector("#checkout-overlay form");
       const addresses = [...new Set([user.address, ...(user.addresses || [])].map((item) => (item || "").trim()).filter(Boolean))];
@@ -145,11 +141,10 @@
 
     function checkoutPaymentChanged(value) {
       const note = document.getElementById("checkout-payment-note");
-      note.textContent = value === "Bank"
-        ? "Thông tin chuyển khoản sẽ được hiển thị sau khi xác nhận đơn hàng."
-        : value === "Online"
-          ? "Thanh toán trực tuyến đang ở chế độ mô phỏng cho bản demo."
-          : "Thanh toán tiền mặt khi nhận hàng.";
+      const bankDetails = document.getElementById("checkout-bank-details");
+      note.textContent = value === "Bank" ? "Vui lòng chuyển khoản đúng nội dung để cửa hàng xác nhận đơn." : "Thanh toán tiền mặt khi nhận hàng.";
+      bankDetails.classList.toggle("hidden", value !== "Bank");
+      document.getElementById("checkout-transfer-content").textContent = checkoutOrderId || "";
     }
 
     // Xem lại đơn vừa đặt: người nhận, địa chỉ, thanh toán và từng sản phẩm.
@@ -174,6 +169,8 @@
       if (!user) {
         closeOverlays();
         openAuth("login");
+        window.__checkoutPending = true;
+        document.getElementById("auth-sub").textContent = "Đăng nhập để tiếp tục thanh toán.";
         return;
       }
       const { items, subtotal, shipping, total } = cartTotals();
@@ -203,7 +200,7 @@
       }
       const dateISO = todayISO();
       const order = {
-        id: "CT-" + Date.now().toString().slice(-6),
+        id: checkoutOrderId || "CT-" + Date.now().toString().slice(-6),
         date: new Date().toLocaleDateString("vi-VN"),
         dateISO,
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity, name: i.product.name, price: i.product.price })),
@@ -235,6 +232,7 @@
       writeStored(KEYS.stockMovements, movements);
       saveOrders([order, ...getOrders()]);
       saveCart([]);
+      checkoutOrderId = null;
       closeOverlays();
       document.getElementById("order-review").innerHTML = orderReviewHtml(order);
       openOverlay("success-overlay");

@@ -1,5 +1,3 @@
-let pendingCartAction = null;
-
 function money(n) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n || 0);
 }
@@ -22,12 +20,6 @@ function cartCount() {
 }
 
 function addToCart(productId, qty, goToCartAfterAdd) {
-  // Đề yêu cầu khách phải đăng nhập mới dùng được giỏ hàng.
-  if (!getUser()) {
-    toast("Vui lòng đăng nhập để mua hàng.");
-    openAuth("login");
-    return false;
-  }
   const product = getProductById(productId);
   if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
     toast("Sản phẩm hiện không được bán.");
@@ -139,6 +131,11 @@ function closeOverlays() {
   document.querySelectorAll(".overlay").forEach((el) => el.classList.add("hidden"));
 }
 
+function closeAuth() {
+  window.__checkoutPending = false;
+  closeOverlays();
+}
+
 function openOverlay(id) {
   closeOverlays();
   const el = document.getElementById(id);
@@ -163,7 +160,7 @@ function renderHeader(active) {
     <header class="site-header">
       <div class="header-inner">
         <button class="icon-btn menu-btn" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
-        <button class="logo" onclick="location.href='index.html'">CỎ THƠM</button>
+        <button class="logo" onclick="location.href='index.html'"><img src="image/logo.png" alt="">CỎ THƠM</button>
         <nav class="nav-desk">
           ${getCategoryList().map(
     (c) => `<button class="${active === c.id ? "active" : ""}" onclick="goCatalog('${c.id}')">${c.label}</button>`
@@ -188,7 +185,7 @@ function renderHeader(active) {
               <a href="admin.html">Trang quản trị</a>
             </div>
           </div>
-          <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng" onclick="return openCart()">
+          <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng">
             👜<span class="badge-count" data-cart-count></span>
           </a>
         </div>
@@ -244,9 +241,8 @@ function renderModals() {
   if (document.getElementById("auth-overlay")) return;
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <div id="auth-overlay" class="overlay hidden">
-      <div class="modal" style="position:relative">
-        <button class="btn-ghost modal-close" type="button" onclick="closeOverlays()" style="position:absolute;top:16px;right:18px;font-size:20px;cursor:pointer">✕</button>
+    <div id="auth-overlay" class="overlay hidden" onclick="if(event.target===this)closeAuth()">
+      <div class="modal">
         <div class="tabs">
           <button id="tab-login" class="active" onclick="openAuth('login')">Đăng nhập</button>
           <button id="tab-register" onclick="openAuth('register')">Đăng ký</button>
@@ -299,9 +295,6 @@ function closeUserMenu() {
   if (!menu) return;
   menu.classList.add("hidden");
   menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", "false");
-}
-function openCart() {
-  return true;
 }
 function goCatalog(cat) {
   location.href = "index.html?view=catalog" + (cat ? "&cat=" + encodeURIComponent(cat) : "");
@@ -358,37 +351,19 @@ function submitAuth(e) {
     addresses: (existing && existing.addresses) || [],
   };
   setUser(user);
+  const continueToCheckout = Boolean(window.__checkoutPending);
+  window.__checkoutPending = false;
   closeOverlays();
   renderHeader(window.__activeNav);
-  toast(isRegister ? "Đăng ký thành công!" : "Đăng nhập thành công!");
-  if (typeof renderCart === "function") renderCart();
-  if (pendingCartAction) {
-    const action = pendingCartAction;
-    pendingCartAction = null;
-    addToCart(action.productId, action.quantity, action.goToCart);
-  }
-  if (typeof renderCart === "function") {
-    renderCart();
-  }
-  if (typeof openCheckout === "function" && getCart().length > 0) {
-    openCheckout();
-  }
-}
-
-function paymentLabel(payment) {
-  if (payment === "COD") return "Tiền mặt khi nhận hàng";
-  if (payment === "Bank") return "Chuyển khoản";
-  return "Thanh toán trực tuyến";
+  toast(isRegister ? "Đăng ký thành công" : "Đăng nhập thành công");
+  if (continueToCheckout && typeof openCheckout === "function") openCheckout();
 }
 
 function logout() {
   setUser(null);
-  localStorage.removeItem(KEYS.user);
-  sessionStorage.removeItem(KEYS.admin);
+  saveCart([]);
   closeOverlays();
-  renderHeader(window.__activeNav);
-  if (typeof renderCart === "function") renderCart();
-  toast("Đã đăng xuất");
+  location.href = "index.html";
 }
 
 function openAccount(tab) {
