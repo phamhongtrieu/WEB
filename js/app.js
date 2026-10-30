@@ -4,17 +4,27 @@ function money(n) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n || 0);
 }
 
+// Mỗi tài khoản có giỏ hàng riêng (lưu theo email), người sau đăng nhập không thấy giỏ của người trước.
+function cartKey() {
+  const user = getUser();
+  return user ? KEYS.cart + "-" + user.email : KEYS.cart;
+}
+
 function getCart() {
   try {
-    return JSON.parse(localStorage.getItem(KEYS.cart) || "[]");
+    return JSON.parse(localStorage.getItem(cartKey()) || "[]");
   } catch (e) {
     return [];
   }
 }
 
 function saveCart(cart) {
-  localStorage.setItem(KEYS.cart, JSON.stringify(cart));
+  localStorage.setItem(cartKey(), JSON.stringify(cart));
   updateCartBadge();
+}
+
+function isForSale(product) {
+  return Boolean(product) && !product.hidden && product.price > 0 && getCategoryList().some((category) => category.id === product.category);
 }
 
 function cartCount() {
@@ -24,12 +34,14 @@ function cartCount() {
 function addToCart(productId, qty, goToCartAfterAdd) {
   // Đề yêu cầu khách phải đăng nhập mới dùng được giỏ hàng.
   if (!getUser()) {
+    // Nhớ món khách vừa bấm, đăng nhập xong sẽ tự thêm vào giỏ (xử lý trong submitAuth).
+    pendingCartAction = { productId, quantity: qty || 1, goToCart: goToCartAfterAdd };
     toast("Vui lòng đăng nhập để mua hàng.");
     openAuth("login");
     return false;
   }
   const product = getProductById(productId);
-  if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
+  if (!isForSale(product)) {
     toast("Sản phẩm hiện không được bán.");
     return false;
   }
@@ -115,7 +127,9 @@ function stars(n) {
 
 function discount(p) {
   if (!p.originalPrice) return 0;
-  return Math.round((1 - p.price / p.originalPrice) * 100);
+  const off = Math.round((1 - p.price / p.originalPrice) * 100);
+  // Giá bán đã cao hơn giá gốc thì không còn giảm giá.
+  return off > 0 ? off : 0;
 }
 
 function productCard(p) {
@@ -124,13 +138,15 @@ function productCard(p) {
     <div class="card-img" onclick="location.href='san-pham.html?id=${p.id}'">
       <img src="${p.images[0]}" alt="${p.name}">
       ${off ? `<span class="sale">-${off}%</span>` : ""}
-      <button class="quick-add" onclick="event.stopPropagation(); addToCart('${p.id}', 1)">+ Giỏ</button>
+      ${p.stock > 0
+        ? `<button class="quick-add" onclick="event.stopPropagation(); addToCart('${p.id}', 1)">+ Giỏ</button>`
+        : `<button class="quick-add" disabled onclick="event.stopPropagation()">Hết hàng</button>`}
     </div>
     <div class="card-body" onclick="location.href='san-pham.html?id=${p.id}'">
       <div class="brand">${p.brand}</div>
       <h3>${p.name}</h3>
       <div class="stars">${stars(p.rating)} <span class="muted">(${p.reviews})</span></div>
-      <div class="price">${money(p.price)}${p.originalPrice ? ` <s>${money(p.originalPrice)}</s>` : ""}</div>
+      <div class="price">${money(p.price)}${off ? ` <s>${money(p.originalPrice)}</s>` : ""}</div>
     </div>
   </article>`;
 }
@@ -185,9 +201,9 @@ function renderHeader(active) {
       : `<button onclick="openAuth('login')">Đăng nhập</button>
                      <button onclick="openAuth('register')">Tạo tài khoản</button>`
     }
-              <a href="admin.html">Trang quản trị</a>
             </div>
           </div>
+          ${user ? `<button class="header-user" onclick="openAccount('profile')">Xin chào, <b>${user.name}</b></button>` : ""}
           <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng" onclick="return openCart()">
             👜<span class="badge-count" data-cart-count></span>
           </a>
@@ -321,6 +337,8 @@ function openAuth(mode) {
   document.getElementById("tab-register").classList.toggle("active", isReg);
   document.getElementById("name-field").style.display = isReg ? "block" : "none";
   document.querySelector("#auth-overlay [name='name']").required = isReg;
+  // Chỉ bắt mật khẩu ≥ 6 ký tự khi đăng ký; mật khẩu admin reset ("1") vẫn phải đăng nhập được.
+  document.querySelector("#auth-overlay [name='password']").minLength = isReg ? 6 : 0;
   document.getElementById("auth-title").textContent = isReg ? "Tạo tài khoản" : "Chào mừng trở lại";
   document.getElementById("auth-sub").textContent = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
   window.__authMode = mode;
@@ -409,9 +427,9 @@ function openAccount(tab) {
       <form onsubmit="saveProfile(event)">
         <div class="field"><label>Họ tên</label><input name="name" value="${user.name || ""}" required></div>
         <div class="field"><label>Email (không thể thay đổi)</label><input name="email" type="email" value="${user.email || ""}" readonly></div>
-        <div class="field"><label>Số điện thoại</label><input name="phone" value="${user.phone || ""}"></div>
+        <div class="field"><label>Số điện thoại</label><input name="phone" type="tel" pattern="0( ?[0-9]){9}" title="Số điện thoại gồm 10 chữ số, bắt đầu bằng 0" value="${user.phone || ""}"></div>
         <div class="field"><label>Địa chỉ mặc định</label><input name="address" value="${user.address || ""}"></div>
-        <div class="field"><label>Địa chỉ giao hàng đã lưu (mỗi địa chỉ một dòng)</label><textarea name="addresses" rows="3" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">${addresses.join("\n")}</textarea></div>
+        <div class="field"><label>Địa chỉ giao hàng đã lưu (mỗi địa chỉ một dòng)</label><textarea name="addresses" rows="3" placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố">${addresses.join("\n")}</textarea></div>
         <button class="btn btn-rose" type="submit">Lưu thay đổi</button>
       </form>`;
   } else {
@@ -423,7 +441,7 @@ function openAccount(tab) {
         ? orders
           .map(
             (o) => `<article class="account-order">
-                <div class="account-order-head"><div><b>${o.id}</b><div class="muted">${o.date} · ${(o.items || []).length} sản phẩm</div></div>
+                <div class="account-order-head"><div><b>${o.id}</b><div class="muted">${o.dateISO ? formatDate(o.dateISO) : o.date} · ${(o.items || []).length} sản phẩm</div></div>
                   <div><span class="status ${statusClass(o.status)}">${o.status}</span><div class="price">${money(o.total)}</div></div>
                 </div>
                 <details><summary>Xem chi tiết đơn hàng</summary>

@@ -10,28 +10,28 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS);
 
 const CATEGORY_META = {
   Skincare: {
-    image: "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=500&h=600&fit=crop&auto=format",
+    image: "images/photo-1612817288484-6f916006741a-500x600.jpg",
     tagline: "Nuôi dưỡng & Bảo vệ",
   },
   Makeup: {
-    image: "https://images.unsplash.com/photo-1631730486572-226d1f595b68?w=500&h=600&fit=crop&auto=format",
+    image: "images/photo-1631730486572-226d1f595b68-500x600.jpg",
     tagline: "Định hình & Tỏa sáng",
   },
   Bodycare: {
-    image: "https://images.unsplash.com/photo-1629380108599-ea06489d66f5?w=500&h=600&fit=crop&auto=format",
+    image: "images/photo-1629380108599-ea06489d66f5-500x600.jpg",
     tagline: "Thư giãn & Phục hồi",
   },
   Hair: {
-    image: "https://images.unsplash.com/photo-1598528738936-c50861cc75a9?w=500&h=600&fit=crop&auto=format",
+    image: "images/photo-1598528738936-c50861cc75a9-500x600.jpg",
     tagline: "Chắc khỏe & Bóng mượt",
   },
   Fragrance: {
-    image: "https://images.unsplash.com/photo-1608979048467-6194dabc6a3d?w=500&h=600&fit=crop&auto=format",
+    image: "images/photo-1608979048467-6194dabc6a3d-500x600.jpg",
     tagline: "Quyến rũ & Lưu hương",
   },
 };
 
-const img = (id) => `https://images.unsplash.com/${id}?w=800&h=800&fit=crop&auto=format`;
+const img = (id) => `images/${id}-800x800.jpg`;
 
 const DEFAULT_PRODUCTS = [
   {
@@ -278,6 +278,13 @@ function todayISO() {
   return dateToISO(new Date());
 }
 
+// Hiển thị ngày "yyyy-mm-dd" thành "dd/mm/yyyy". Muốn đổi định dạng ngày cho cả web thì chỉ sửa hàm này.
+function formatDate(iso) {
+  if (!iso) return "";
+  const [year, month, day] = iso.slice(0, 10).split("-");
+  return `${day}/${month}/${year}`;
+}
+
 // Đơn lưu trước khi sửa theo đề dùng tên trạng thái cũ, đổi sang tên mới.
 function orderStatus(status) {
   if (status === "Đang xử lý") return "Mới đặt";
@@ -285,7 +292,6 @@ function orderStatus(status) {
   return status;
 }
 
-// Màu nhãn trạng thái, dùng chung cho trang admin và trang khách hàng.
 function statusClass(status) {
   if (status === "Đã giao" || status === "Hoàn thành") return "st-done";
   if (status === "Đã xử lý") return "st-ship";
@@ -337,7 +343,8 @@ function loadProducts() {
     const saved = localStorage.getItem(KEYS.products);
     if (saved) return JSON.parse(saved);
   } catch (e) {}
-  return DEFAULT_PRODUCTS.slice();
+  // Sản phẩm mẫu chưa có giá vốn: lấy giá bán ÷ 1,3 (ứng với % lợi nhuận mặc định 30%).
+  return DEFAULT_PRODUCTS.map((product) => ({ ...product, costPrice: Math.round(product.price / 1.3 / 1000) * 1000 }));
 }
 
 function saveProducts(list) {

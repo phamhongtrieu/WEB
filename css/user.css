@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap");
+@import url("./fonts.css");
 
 :root {
   --cream: #fafaf8;
@@ -1322,3 +1322,6 @@ h3 {
     grid-template-columns: 1.7fr 0.9fr;
   }
 }
+.header-user { background: none; border: none; cursor: pointer; color: var(--medium); font-size: 13px; white-space: nowrap; }
+.header-user:hover { color: var(--rose); }
+@media (max-width: 799px) { .header-user { display: none; } }

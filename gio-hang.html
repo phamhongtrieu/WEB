@@ -15,10 +15,17 @@
       <p class="muted" id="checkout-total"></p>
       <form onsubmit="placeOrder(event)">
         <div class="field"><label>Họ tên</label><input name="name" required></div>
-        <div class="field"><label>Số điện thoại</label><input name="phone" required></div>
-        <div class="field"><label>Chọn địa chỉ đã lưu</label><select name="savedAddress" onchange="checkoutAddressChanged(this.value)"></select></div>
-        <div class="field"><label>Địa chỉ giao hàng</label><textarea name="address" rows="2" required></textarea></div>
-        <label class="checkout-save-address"><input name="saveAddress" type="checkbox"> Lưu địa chỉ này vào tài khoản</label>
+        <div class="field"><label>Số điện thoại</label><input name="phone" type="tel" pattern="0( ?[0-9]){9}" title="Số điện thoại gồm 10 chữ số, bắt đầu bằng 0" required></div>
+        <p class="muted" style="font-size:12px;margin-top:12px">Địa chỉ nhận hàng</p>
+        <label class="checkout-save-address"><input type="radio" name="addressMode" value="saved" onchange="setAddressMode(this.value)"> Dùng địa chỉ trong tài khoản</label>
+        <label class="checkout-save-address"><input type="radio" name="addressMode" value="new" onchange="setAddressMode(this.value)"> Nhập địa chỉ giao hàng mới</label>
+        <div id="saved-address-box" class="field"><label>Chọn địa chỉ đã lưu</label><select name="savedAddress"></select></div>
+        <div id="new-address-box">
+          <div class="field"><label>Số nhà, tên đường</label><input name="street" placeholder="Ví dụ: 24 Nguyễn Huệ"></div>
+          <div class="field"><label>Phường / Xã</label><input name="ward" placeholder="Ví dụ: Phường Sài Gòn"></div>
+          <div class="field"><label>Tỉnh / Thành phố</label><select name="province"></select></div>
+          <label class="checkout-save-address"><input name="saveAddress" type="checkbox"> Lưu địa chỉ này vào tài khoản</label>
+        </div>
         <div class="field">
           <label>Phương thức</label>
           <select name="payment" onchange="checkoutPaymentChanged(this.value)">
@@ -118,47 +125,64 @@
       }
       document.getElementById("checkout-total").textContent = "Tổng thanh toán: " + money(total);
       const form = document.querySelector("#checkout-overlay form");
-      const addresses = [...new Set([user.address, ...(user.addresses || [])].map((item) => (item || "").trim()).filter(Boolean))];
+      const addresses = savedAddresses(user);
       form.elements.name.value = user.name || "";
       form.elements.phone.value = user.phone || "";
-      form.elements.savedAddress.innerHTML = `<option value="">Nhập địa chỉ mới</option>${addresses.map((address, index) => `<option value="${index}">${address}</option>`).join("")}`;
-      form.elements.address.value = user.address || "";
-      form.elements.savedAddress.value = addresses.length ? "0" : "";
+      form.elements.savedAddress.innerHTML = addresses.map((address, index) => `<option value="${index}">${address}</option>`).join("");
+      form.elements.province.innerHTML = `<option value="">-- Chọn tỉnh / thành phố --</option>${PROVINCES.map((name) => `<option>${name}</option>`).join("")}`;
+      form.elements.street.value = "";
+      form.elements.ward.value = "";
       form.elements.saveAddress.checked = false;
-      if (addresses.length) form.elements.address.value = addresses[0];
+      form.querySelector("[value='saved']").disabled = !addresses.length;
+      setAddressMode(addresses.length ? "saved" : "new");
       form.elements.payment.value = "COD";
       checkoutPaymentChanged(form.elements.payment.value);
       openOverlay("checkout-overlay");
     }
 
-    function checkoutAddressChanged(value) {
-      const field = document.querySelector("#checkout-overlay [name='address']");
-      const user = getUser();
-      const addresses = [...new Set([user.address, ...(user.addresses || [])].map((item) => (item || "").trim()).filter(Boolean))];
-      if (value === "") {
-        field.value = "";
-        field.focus();
-        return;
-      }
-      field.value = addresses[Number(value)] || "";
+    // 34 tỉnh / thành phố sau khi sắp xếp lại đơn vị hành chính năm 2025.
+    const PROVINCES = [
+      "TP. Hà Nội", "TP. Hồ Chí Minh", "TP. Hải Phòng", "TP. Đà Nẵng", "TP. Cần Thơ", "TP. Huế",
+      "An Giang", "Bắc Ninh", "Cà Mau", "Cao Bằng", "Đắk Lắk", "Điện Biên", "Đồng Nai", "Đồng Tháp",
+      "Gia Lai", "Hà Tĩnh", "Hưng Yên", "Khánh Hòa", "Lai Châu", "Lâm Đồng", "Lạng Sơn", "Lào Cai",
+      "Nghệ An", "Ninh Bình", "Phú Thọ", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sơn La", "Tây Ninh",
+      "Thái Nguyên", "Thanh Hóa", "Tuyên Quang", "Vĩnh Long",
+    ];
+
+    function savedAddresses(user) {
+      return [...new Set([user.address, ...(user.addresses || [])].map((item) => (item || "").trim()).filter(Boolean))];
+    }
+
+    // Hai trường hợp địa chỉ: chọn từ tài khoản, hoặc nhập mới (chỉ bắt buộc các ô của trường hợp đang chọn).
+    function setAddressMode(mode) {
+      const form = document.querySelector("#checkout-overlay form");
+      const isNew = mode === "new";
+      form.querySelector(`[name='addressMode'][value='${mode}']`).checked = true;
+      document.getElementById("saved-address-box").style.display = isNew ? "none" : "block";
+      document.getElementById("new-address-box").style.display = isNew ? "block" : "none";
+      form.elements.savedAddress.required = !isNew;
+      form.elements.street.required = isNew;
+      form.elements.ward.required = isNew;
+      form.elements.province.required = isNew;
     }
 
     function checkoutPaymentChanged(value) {
       const note = document.getElementById("checkout-payment-note");
       note.textContent = value === "Bank"
-        ? "Thông tin chuyển khoản sẽ được hiển thị sau khi xác nhận đơn hàng."
+        ? "Thông tin chuyển khoản sẽ hiện ở bước xem lại đơn hàng sau khi đặt."
         : value === "Online"
           ? "Thanh toán trực tuyến đang ở chế độ mô phỏng cho bản demo."
           : "Thanh toán tiền mặt khi nhận hàng.";
     }
 
-    // Xem lại đơn vừa đặt: người nhận, địa chỉ, thanh toán và từng sản phẩm.
     function orderReviewHtml(order) {
       return `
         <p><b>Mã đơn:</b> ${order.id} · Ngày đặt: ${order.date} · Trạng thái: ${order.status}</p>
         <p><b>Người nhận:</b> ${order.name} · ${order.phone}</p>
         <p><b>Giao đến:</b> ${order.address}</p>
         <p><b>Thanh toán:</b> ${paymentLabel(order.payment)}</p>
+        ${order.payment === "Bank" ? `<p class="muted">Vui lòng chuyển <b>${money(order.total)}</b> vào tài khoản cửa hàng (thông tin demo):
+          Số tài khoản 0000 0000 0000 · Chủ tài khoản CỎ THƠM · Nội dung chuyển khoản: <b>${order.id}</b></p>` : ""}
         <div class="table-wrap" style="margin-top:12px"><table>
           <thead><tr><th>Sản phẩm</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
           <tbody>${order.items.map((item) => `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${money(item.price)}</td><td>${money(item.price * item.quantity)}</td></tr>`).join("")}</tbody>
@@ -181,15 +205,18 @@
       const products = loadProducts();
       const unavailable = items.find(({ product, quantity }) => {
         const current = products.find((entry) => String(entry.id) === String(product.id));
-        return !current || current.hidden || !getCategoryList().some((category) => category.id === current.category) || current.stock < quantity;
+        return !isForSale(current) || current.stock < quantity;
       });
       if (unavailable) {
         toast("Số lượng tồn kho đã thay đổi. Vui lòng kiểm tra lại giỏ hàng.");
         return;
       }
       const form = new FormData(e.target);
-      const address = form.get("address").toString().trim();
-      if (form.get("saveAddress") === "on" && address) {
+      const isNewAddress = form.get("addressMode") === "new";
+      const address = isNewAddress
+        ? [form.get("street"), form.get("ward"), form.get("province")].map((part) => part.toString().trim()).join(", ")
+        : savedAddresses(user)[Number(form.get("savedAddress"))];
+      if (isNewAddress && form.get("saveAddress") === "on") {
         user.address = address;
         user.addresses = [...new Set([address, ...(user.addresses || [])])];
         setUser(user);
@@ -204,7 +231,7 @@
       const dateISO = todayISO();
       const order = {
         id: "CT-" + Date.now().toString().slice(-6),
-        date: new Date().toLocaleDateString("vi-VN"),
+        date: formatDate(dateISO),
         dateISO,
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity, name: i.product.name, price: i.product.price })),
         name: form.get("name"),
