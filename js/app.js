@@ -431,6 +431,13 @@ function openAccount(tab) {
         <div class="field"><label>Địa chỉ mặc định</label><input name="address" value="${user.address || ""}"></div>
         <div class="field"><label>Địa chỉ giao hàng đã lưu (mỗi địa chỉ một dòng)</label><textarea name="addresses" rows="3" placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố">${addresses.join("\n")}</textarea></div>
         <button class="btn btn-rose" type="submit">Lưu thay đổi</button>
+      </form>
+      <h2 class="font-display" style="margin-top:28px">Đổi mật khẩu</h2>
+      <form onsubmit="changePassword(event)">
+        <div class="field"><label>Mật khẩu hiện tại</label><input name="currentPassword" type="password" autocomplete="current-password" required></div>
+        <div class="field"><label>Mật khẩu mới</label><input name="newPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+        <div class="field"><label>Nhập lại mật khẩu mới</label><input name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+        <button class="btn btn-rose" type="submit">Đổi mật khẩu</button>
       </form>`;
   } else {
     const orders = getOrders()
@@ -476,6 +483,39 @@ function saveProfile(e) {
   renderHeader(window.__activeNav);
   toast("Đã lưu hồ sơ");
   closeOverlays();
+}
+
+function changePassword(e) {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const currentPassword = form.get("currentPassword").toString();
+  const newPassword = form.get("newPassword").toString();
+  const confirmPassword = form.get("confirmPassword").toString();
+  const user = getUser();
+  if (!user) {
+    toast("Vui lòng đăng nhập lại để đổi mật khẩu.");
+    closeOverlays();
+    openAuth("login");
+    return;
+  }
+  if (newPassword.length < 6) {
+    toast("Mật khẩu mới phải có ít nhất 6 ký tự.");
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    toast("Mật khẩu mới nhập lại không khớp.");
+    return;
+  }
+  const accounts = readStored(KEYS.customerAccounts, []);
+  const account = accounts.find((item) => item.email.toLowerCase() === user.email.toLowerCase());
+  if (!account || account.password !== currentPassword) {
+    toast("Mật khẩu hiện tại không đúng.");
+    return;
+  }
+  account.password = newPassword;
+  writeStored(KEYS.customerAccounts, accounts);
+  e.target.reset();
+  toast("Đổi mật khẩu thành công.");
 }
 
 function cartItemsDetailed() {
