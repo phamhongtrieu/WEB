@@ -13,13 +13,13 @@
     <div id="view-home">
       <section class="hero">
         <div class="hero-slide active" data-slide="0">
-          <img src="https://images.unsplash.com/photo-1598528738936-c50861cc75a9?w=1600&h=800&fit=crop&auto=format" alt="Dưỡng da" />
+          <img src="images/photo-1598528738936-c50861cc75a9-1600x800.jpg" alt="Dưỡng da" />
         </div>
         <div class="hero-slide" data-slide="1">
-          <img src="https://images.unsplash.com/photo-1631730486572-226d1f595b68?w=1600&h=800&fit=crop&auto=format" alt="Trang điểm" />
+          <img src="images/photo-1631730486572-226d1f595b68-1600x800.jpg" alt="Trang điểm" />
         </div>
         <div class="hero-slide" data-slide="2">
-          <img src="https://images.unsplash.com/photo-1608979048467-6194dabc6a3d?w=1600&h=800&fit=crop&auto=format" alt="Nước hoa" />
+          <img src="images/photo-1608979048467-6194dabc6a3d-1600x800.jpg" alt="Nước hoa" />
         </div>
         <div class="wrap" style="position:relative;z-index:2;height:100%">
           <div class="hero-copy" id="hero-copy"></div>
@@ -63,7 +63,7 @@
       <section class="section wrap">
         <div class="editorial">
           <button class="banner" onclick="showCatalog('Skincare')">
-            <img src="https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=900&h=600&fit=crop&auto=format" alt="Skincare" />
+            <img src="images/photo-1598440947619-2c35fc9aa908-900x600.jpg" alt="Skincare" />
             <div class="banner-copy">
               <span>Bộ sưu tập hàng ngày</span>
               <h3>Tinh túy chăm sóc da</h3>
@@ -72,11 +72,11 @@
           </button>
           <div style="display:grid;gap:16px">
             <button class="banner banner-sm" onclick="showCatalog('Fragrance')">
-              <img src="https://images.unsplash.com/photo-1608979048467-6194dabc6a3d?w=900&h=400&fit=crop&auto=format" alt="Fragrance" />
+              <img src="images/photo-1608979048467-6194dabc6a3d-900x400.jpg" alt="Fragrance" />
               <div class="banner-copy"><span>Đặc trưng</span><h3>Bộ sưu tập nước hoa</h3></div>
             </button>
             <button class="banner banner-sm" onclick="showCatalog('Makeup')">
-              <img src="https://images.unsplash.com/photo-1631730486572-226d1f595b68?w=900&h=400&fit=crop&auto=format" alt="Makeup" />
+              <img src="images/photo-1631730486572-226d1f595b68-900x400.jpg" alt="Makeup" />
               <div class="banner-copy"><span>Câu chuyện màu sắc</span><h3>Bộ sưu tập trang điểm</h3></div>
             </button>
           </div>
@@ -220,6 +220,10 @@
       catFilter = form.get("category").toString();
       searchMinPrice = form.get("minPrice").toString();
       searchMaxPrice = form.get("maxPrice").toString();
+      if (searchMinPrice !== "" && searchMaxPrice !== "" && Number(searchMinPrice) > Number(searchMaxPrice)) {
+        toast("\"Giá từ\" phải nhỏ hơn hoặc bằng \"Đến giá\"");
+        return;
+      }
       priceRange = [0, 99999999];
       catalogPage = 1;
       renderCatalog();
@@ -243,7 +247,7 @@
 
     function renderCatalog() {
       const list = loadProducts().filter((p) => {
-        if (p.hidden || !getCategoryList().some((category) => category.id === p.category)) return false;
+        if (!isForSale(p)) return false;
         const okCat = !catFilter || p.category === catFilter;
         const minPrice = Math.max(priceRange[0], searchMinPrice === "" ? 0 : Number(searchMinPrice));
         const maxPrice = Math.min(priceRange[1], searchMaxPrice === "" ? 99999999 : Number(searchMaxPrice));
@@ -286,7 +290,7 @@
         ${i === 0 ? '<span class="trend">Xu hướng</span>' : ""}
         <div class="info"><small>${c.tagline}</small><h3>${c.label}</h3></div>
       </button>`).join("");
-    const featured = loadProducts().filter((p) => !p.hidden && getCategoryList().some((category) => category.id === p.category) && ["1", "5", "8", "12"].includes(p.id));
+    const featured = loadProducts().filter((p) => isForSale(p) && ["1", "5", "8", "12"].includes(p.id));
     document.getElementById("featured-grid").innerHTML = featured.map(productCard).join("");
     renderHero();
     setInterval(() => { slideIndex = (slideIndex + 1) % slides.length; renderHero(); }, 5500);

@@ -18,7 +18,7 @@
     let tab = "description";
     const id = params().get("id") || "1";
     let product = getProductById(id);
-    if (product && (product.hidden || !getCategoryList().some((category) => category.id === product.category))) product = null;
+    if (!isForSale(product)) product = null;
 
     function setQty(n) {
       if (!product) return;
@@ -50,8 +50,9 @@
             <p class="kicker">${product.brand} · ${product.sku}</p>
             <h1>${product.name}</h1>
             <div class="stars" style="margin:10px 0">${stars(product.rating)} ${product.rating} (${product.reviews} đánh giá)</div>
-            <div class="price" style="font-size:24px">${money(product.price)}${product.originalPrice ? ` <s>${money(product.originalPrice)}</s>` : ""}${off ? ` <span class="sale">-${off}%</span>` : ""}</div>
+            <div class="price" style="font-size:24px">${money(product.price)}${off ? ` <s>${money(product.originalPrice)}</s> <span class="sale">-${off}%</span>` : ""}</div>
             <p class="medium" style="margin:16px 0">${product.description}</p>
+            ${product.stock > 0 ? `
             <p class="muted">Còn ${product.stock} sản phẩm</p>
             <div class="actions">
               <div class="qty">
@@ -61,7 +62,7 @@
               </div>
               <button class="btn btn-rose" onclick="addToCart('${product.id}', qty)">Thêm vào giỏ</button>
               <button class="btn btn-dark" onclick="buyNow('${product.id}', qty)">Mua ngay</button>
-            </div>
+            </div>` : `<p class="muted"><b>Hết hàng</b> — sản phẩm sẽ sớm được nhập thêm.</p>`}
             <div class="tabs">
               <button class="${tab==='description'?'active':''}" onclick="setTab('description')">Mô tả</button>
               <button class="${tab==='ingredients'?'active':''}" onclick="setTab('ingredients')">Thành phần</button>
@@ -75,7 +76,7 @@
           <h2>Sản phẩm cùng danh mục</h2>
           <div class="product-grid" style="margin-top:20px" id="related"></div>
         </section>`;
-      const related = loadProducts().filter((p) => !p.hidden && p.category === product.category && p.id !== product.id).slice(0, 4);
+      const related = loadProducts().filter((p) => isForSale(p) && p.category === product.category && p.id !== product.id).slice(0, 4);
       document.getElementById("related").innerHTML = related.map(productCard).join("");
     }
 

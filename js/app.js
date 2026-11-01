@@ -1,18 +1,30 @@
+let pendingCartAction = null;
+
 function money(n) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n || 0);
 }
 
+// Mỗi tài khoản có giỏ hàng riêng (lưu theo email), người sau đăng nhập không thấy giỏ của người trước.
+function cartKey() {
+  const user = getUser();
+  return user ? KEYS.cart + "-" + user.email : KEYS.cart;
+}
+
 function getCart() {
   try {
-    return JSON.parse(localStorage.getItem(KEYS.cart) || "[]");
+    return JSON.parse(localStorage.getItem(cartKey()) || "[]");
   } catch (e) {
     return [];
   }
 }
 
 function saveCart(cart) {
-  localStorage.setItem(KEYS.cart, JSON.stringify(cart));
+  localStorage.setItem(cartKey(), JSON.stringify(cart));
   updateCartBadge();
+}
+
+function isForSale(product) {
+  return Boolean(product) && !product.hidden && product.price > 0 && getCategoryList().some((category) => category.id === product.category);
 }
 
 function cartCount() {
@@ -20,17 +32,25 @@ function cartCount() {
 }
 
 function addToCart(productId, qty, goToCartAfterAdd) {
+  // Đề yêu cầu khách phải đăng nhập mới dùng được giỏ hàng.
+  if (!getUser()) {
+    // Nhớ món khách vừa bấm, đăng nhập xong sẽ tự thêm vào giỏ (xử lý trong submitAuth).
+    pendingCartAction = { productId, quantity: qty || 1, goToCart: goToCartAfterAdd };
+    toast("Vui lòng đăng nhập để mua hàng.");
+    openAuth("login");
+    return false;
+  }
   const product = getProductById(productId);
-  if (!product || product.hidden || !getCategoryList().some((category) => category.id === product.category)) {
+  if (!isForSale(product)) {
     toast("Sản phẩm hiện không được bán.");
-    return;
+    return false;
   }
   const cart = getCart();
   const found = cart.find((i) => i.productId === productId);
   const nextQty = (found ? found.quantity : 0) + (qty || 1);
   if (nextQty > product.stock) {
     toast("Không đủ hàng trong kho.");
-    return;
+    return false;
   }
   if (found) found.quantity = nextQty;
   else cart.push({ productId, quantity: qty || 1 });
@@ -107,7 +127,9 @@ function stars(n) {
 
 function discount(p) {
   if (!p.originalPrice) return 0;
-  return Math.round((1 - p.price / p.originalPrice) * 100);
+  const off = Math.round((1 - p.price / p.originalPrice) * 100);
+  // Giá bán đã cao hơn giá gốc thì không còn giảm giá.
+  return off > 0 ? off : 0;
 }
 
 function productCard(p) {
@@ -116,24 +138,21 @@ function productCard(p) {
     <div class="card-img" onclick="location.href='san-pham.html?id=${p.id}'">
       <img src="${p.images[0]}" alt="${p.name}">
       ${off ? `<span class="sale">-${off}%</span>` : ""}
-      <button class="quick-add" onclick="event.stopPropagation(); addToCart('${p.id}', 1)">+ Giỏ</button>
+      ${p.stock > 0
+        ? `<button class="quick-add" onclick="event.stopPropagation(); addToCart('${p.id}', 1)">+ Giỏ</button>`
+        : `<button class="quick-add" disabled onclick="event.stopPropagation()">Hết hàng</button>`}
     </div>
     <div class="card-body" onclick="location.href='san-pham.html?id=${p.id}'">
       <div class="brand">${p.brand}</div>
       <h3>${p.name}</h3>
       <div class="stars">${stars(p.rating)} <span class="muted">(${p.reviews})</span></div>
-      <div class="price">${money(p.price)}${p.originalPrice ? ` <s>${money(p.originalPrice)}</s>` : ""}</div>
+      <div class="price">${money(p.price)}${off ? ` <s>${money(p.originalPrice)}</s>` : ""}</div>
     </div>
   </article>`;
 }
 
 function closeOverlays() {
   document.querySelectorAll(".overlay").forEach((el) => el.classList.add("hidden"));
-}
-
-function closeAuth() {
-  window.__checkoutPending = false;
-  closeOverlays();
 }
 
 function openOverlay(id) {
@@ -152,36 +171,40 @@ function updateCartBadge() {
 
 function renderHeader(active) {
   const user = getUser();
+  const isAdminSession = sessionStorage.getItem(KEYS.admin) === "yes" || (user && user.role === "admin");
   const host = document.getElementById("site-header");
   if (!host) return;
   host.innerHTML = `
-    <div class="announce">MIỄN PHÍ VẬN CHUYỂN ĐƠN TỪ 600.000₫ &nbsp;·&nbsp; MÃ <b>GLOW20</b> GIẢM 20%</div>
+    <div class="announce">MIỄN PHÍ VẬN CHUYỂN CHO MỌI ĐƠN HÀNG TỪ 600.000₫</div>
     <header class="site-header">
       <div class="header-inner">
         <button class="icon-btn menu-btn" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
-        <button class="logo" onclick="location.href='index.html'"><img src="image/logo.png" alt="">CỎ THƠM</button>
+        <button class="logo" onclick="location.href='index.html'">CỎ THƠM</button>
         <nav class="nav-desk">
           ${getCategoryList().map(
-            (c) => `<button class="${active === c.id ? "active" : ""}" onclick="goCatalog('${c.id}')">${c.label}</button>`
-          ).join("")}
+    (c) => `<button class="${active === c.id ? "active" : ""}" onclick="goCatalog('${c.id}')">${c.label}</button>`
+  ).join("")}
         </nav>
         <div class="header-actions">
           <button class="icon-btn" onclick="toggleSearch()" aria-label="Tìm kiếm">⌕</button>
           <div class="account-menu-wrap" style="position:relative" onmouseenter="openUserMenu()" onmouseleave="closeUserMenu()">
             <button class="icon-btn" onclick="toggleUserMenu()" aria-label="Tài khoản" aria-haspopup="true" aria-expanded="false">👤</button>
             <div id="user-menu" class="user-menu hidden">
-              ${
-                user
-                  ? `<button onclick="openAccount('profile')">Xin chào, ${user.name}</button>
-                     <button onclick="openAccount('orders')">Đơn hàng của tôi</button>
-                     <button onclick="logout()">Đăng xuất</button>`
-                  : `<button onclick="openAuth('login')">Đăng nhập</button>
+              ${user
+      ? isAdminSession
+        ? `<button onclick="location.href='admin.html'">Xin chào, ${user.name}</button>
+                       <button onclick="logout()">Đăng xuất</button>`
+        : `<button onclick="openAccount('profile')">Xin chào, ${user.name}</button>
+                       <button onclick="openAccount('orders')">Đơn hàng của tôi</button>
+                       <button onclick="openAccount('profile')">Hồ sơ</button>
+                       <button onclick="logout()">Đăng xuất</button>`
+      : `<button onclick="openAuth('login')">Đăng nhập</button>
                      <button onclick="openAuth('register')">Tạo tài khoản</button>`
-              }
-              <a href="admin.html">Trang quản trị</a>
+    }
             </div>
           </div>
-          <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng">
+          ${user ? `<button class="header-user" onclick="openAccount('profile')">Xin chào, <b>${user.name}</b></button>` : ""}
+          <a class="icon-btn" href="gio-hang.html" aria-label="Giỏ hàng" onclick="return openCart()">
             👜<span class="badge-count" data-cart-count></span>
           </a>
         </div>
@@ -237,8 +260,9 @@ function renderModals() {
   if (document.getElementById("auth-overlay")) return;
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <div id="auth-overlay" class="overlay hidden" onclick="if(event.target===this)closeAuth()">
-      <div class="modal">
+    <div id="auth-overlay" class="overlay hidden">
+      <div class="modal" style="position:relative">
+        <button class="btn-ghost modal-close" type="button" onclick="closeOverlays()" style="position:absolute;top:16px;right:18px;font-size:20px;cursor:pointer">✕</button>
         <div class="tabs">
           <button id="tab-login" class="active" onclick="openAuth('login')">Đăng nhập</button>
           <button id="tab-register" onclick="openAuth('register')">Đăng ký</button>
@@ -292,6 +316,9 @@ function closeUserMenu() {
   menu.classList.add("hidden");
   menu.parentElement.querySelector('[aria-haspopup="true"]')?.setAttribute("aria-expanded", "false");
 }
+function openCart() {
+  return true;
+}
 function goCatalog(cat) {
   location.href = "index.html?view=catalog" + (cat ? "&cat=" + encodeURIComponent(cat) : "");
 }
@@ -310,6 +337,8 @@ function openAuth(mode) {
   document.getElementById("tab-register").classList.toggle("active", isReg);
   document.getElementById("name-field").style.display = isReg ? "block" : "none";
   document.querySelector("#auth-overlay [name='name']").required = isReg;
+  // Chỉ bắt mật khẩu ≥ 6 ký tự khi đăng ký; mật khẩu admin reset ("1") vẫn phải đăng nhập được.
+  document.querySelector("#auth-overlay [name='password']").minLength = isReg ? 6 : 0;
   document.getElementById("auth-title").textContent = isReg ? "Tạo tài khoản" : "Chào mừng trở lại";
   document.getElementById("auth-sub").textContent = isReg ? "Tham gia Cỏ Thơm để lưu đơn hàng." : "Đăng nhập để theo dõi đơn hàng.";
   window.__authMode = mode;
@@ -347,19 +376,37 @@ function submitAuth(e) {
     addresses: (existing && existing.addresses) || [],
   };
   setUser(user);
-  const continueToCheckout = Boolean(window.__checkoutPending);
-  window.__checkoutPending = false;
   closeOverlays();
   renderHeader(window.__activeNav);
-  toast(isRegister ? "Đăng ký thành công" : "Đăng nhập thành công");
-  if (continueToCheckout && typeof openCheckout === "function") openCheckout();
+  toast(isRegister ? "Đăng ký thành công!" : "Đăng nhập thành công!");
+  if (typeof renderCart === "function") renderCart();
+  if (pendingCartAction) {
+    const action = pendingCartAction;
+    pendingCartAction = null;
+    addToCart(action.productId, action.quantity, action.goToCart);
+  }
+  if (typeof renderCart === "function") {
+    renderCart();
+  }
+  if (typeof openCheckout === "function" && getCart().length > 0) {
+    openCheckout();
+  }
+}
+
+function paymentLabel(payment) {
+  if (payment === "COD") return "Tiền mặt khi nhận hàng";
+  if (payment === "Bank") return "Chuyển khoản";
+  return "Thanh toán trực tuyến";
 }
 
 function logout() {
   setUser(null);
-  saveCart([]);
+  localStorage.removeItem(KEYS.user);
+  sessionStorage.removeItem(KEYS.admin);
   closeOverlays();
-  location.href = "index.html";
+  renderHeader(window.__activeNav);
+  if (typeof renderCart === "function") renderCart();
+  toast("Đã đăng xuất");
 }
 
 function openAccount(tab) {
@@ -380,29 +427,38 @@ function openAccount(tab) {
       <form onsubmit="saveProfile(event)">
         <div class="field"><label>Họ tên</label><input name="name" value="${user.name || ""}" required></div>
         <div class="field"><label>Email (không thể thay đổi)</label><input name="email" type="email" value="${user.email || ""}" readonly></div>
-        <div class="field"><label>Số điện thoại</label><input name="phone" value="${user.phone || ""}"></div>
+        <div class="field"><label>Số điện thoại</label><input name="phone" type="tel" pattern="0( ?[0-9]){9}" title="Số điện thoại gồm 10 chữ số, bắt đầu bằng 0" value="${user.phone || ""}"></div>
         <div class="field"><label>Địa chỉ mặc định</label><input name="address" value="${user.address || ""}"></div>
-        <div class="field"><label>Địa chỉ giao hàng đã lưu (mỗi địa chỉ một dòng)</label><textarea name="addresses" rows="3" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">${addresses.join("\n")}</textarea></div>
+        <div class="field"><label>Địa chỉ giao hàng đã lưu (mỗi địa chỉ một dòng)</label><textarea name="addresses" rows="3" placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố">${addresses.join("\n")}</textarea></div>
         <button class="btn btn-rose" type="submit">Lưu thay đổi</button>
+      </form>
+      <h2 class="font-display" style="margin-top:28px">Đổi mật khẩu</h2>
+      <form onsubmit="changePassword(event)">
+        <div class="field"><label>Mật khẩu hiện tại</label><input name="currentPassword" type="password" autocomplete="current-password" required></div>
+        <div class="field"><label>Mật khẩu mới</label><input name="newPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+        <div class="field"><label>Nhập lại mật khẩu mới</label><input name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required></div>
+        <button class="btn btn-rose" type="submit">Đổi mật khẩu</button>
       </form>`;
   } else {
-    const orders = getOrders().filter((order) => (order.email || "").toLowerCase() === user.email.toLowerCase());
+    const orders = getOrders()
+      .filter((order) => (order.email || "").toLowerCase() === user.email.toLowerCase())
+      .map((order) => ({ ...order, status: orderStatus(order.status) }));
     body.innerHTML = `<h2 class="font-display">Đơn hàng</h2>` +
       (orders.length
         ? orders
-            .map(
-              (o) => `<article class="account-order">
-                <div class="account-order-head"><div><b>${o.id}</b><div class="muted">${o.date} · ${(o.items || []).length} sản phẩm</div></div>
-                  <div><span class="status ${o.status === "Đã giao" ? "st-done" : o.status === "Đang giao" ? "st-ship" : o.status === "Đã hủy" ? "st-cancel" : "st-wait"}">${o.status}</span><div class="price">${money(o.total)}</div></div>
+          .map(
+            (o) => `<article class="account-order">
+                <div class="account-order-head"><div><b>${o.id}</b><div class="muted">${o.dateISO ? formatDate(o.dateISO) : o.date} · ${(o.items || []).length} sản phẩm</div></div>
+                  <div><span class="status ${statusClass(o.status)}">${o.status}</span><div class="price">${money(o.total)}</div></div>
                 </div>
                 <details><summary>Xem chi tiết đơn hàng</summary>
                   <div class="account-order-items">${(o.items || []).map((item) => `<div><span>${item.name} × ${item.quantity}</span><b>${money(item.price * item.quantity)}</b></div>`).join("")}</div>
                   <p class="muted">Giao đến: ${o.address || "—"} · ${o.phone || "—"}</p>
-                  <p class="muted">Thanh toán: ${o.payment === "COD" ? "Tiền mặt khi nhận hàng" : o.payment === "Bank" ? "Chuyển khoản" : "Thanh toán trực tuyến"} · ${o.status}</p>
+                  <p class="muted">Thanh toán: ${paymentLabel(o.payment)} · ${o.status}</p>
                 </details>
               </article>`
-            )
-            .join("")
+          )
+          .join("")
         : `<p class="muted" style="margin-top:12px">Bạn chưa có đơn hàng nào.</p>`);
   }
 }
@@ -427,6 +483,39 @@ function saveProfile(e) {
   renderHeader(window.__activeNav);
   toast("Đã lưu hồ sơ");
   closeOverlays();
+}
+
+function changePassword(e) {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const currentPassword = form.get("currentPassword").toString();
+  const newPassword = form.get("newPassword").toString();
+  const confirmPassword = form.get("confirmPassword").toString();
+  const user = getUser();
+  if (!user) {
+    toast("Vui lòng đăng nhập lại để đổi mật khẩu.");
+    closeOverlays();
+    openAuth("login");
+    return;
+  }
+  if (newPassword.length < 6) {
+    toast("Mật khẩu mới phải có ít nhất 6 ký tự.");
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    toast("Mật khẩu mới nhập lại không khớp.");
+    return;
+  }
+  const accounts = readStored(KEYS.customerAccounts, []);
+  const account = accounts.find((item) => item.email.toLowerCase() === user.email.toLowerCase());
+  if (!account || account.password !== currentPassword) {
+    toast("Mật khẩu hiện tại không đúng.");
+    return;
+  }
+  account.password = newPassword;
+  writeStored(KEYS.customerAccounts, accounts);
+  e.target.reset();
+  toast("Đổi mật khẩu thành công.");
 }
 
 function cartItemsDetailed() {

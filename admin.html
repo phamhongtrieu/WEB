@@ -7,7 +7,387 @@
   <link rel="stylesheet" href="css/admin.css" />
 </head>
 <body>
-  <div id="admin-root"></div>
+
+  <!-- ===== ĐĂNG NHẬP ===== -->
+  <div id="login-page" class="admin-login">
+    <div class="modal">
+      <p class="kicker">Cỏ Thơm</p>
+      <h2 class="font-display">Đăng nhập quản trị</h2>
+      <p class="muted" style="margin-bottom:12px">admin@cothom.vn / Admin@123</p>
+      <form onsubmit="adminLogin(event)">
+        <div class="field"><label>Email</label><input name="email" type="email" required></div>
+        <div class="field"><label>Mật khẩu</label><input name="password" type="password" required></div>
+        <button class="btn btn-rose" style="width:100%" type="submit">Đăng nhập</button>
+      </form>
+      <button class="btn-ghost" style="margin-top:10px" onclick="location.href='index.html'">← Về cửa hàng</button>
+    </div>
+  </div>
+
+  <!-- ===== TRANG QUẢN TRỊ ===== -->
+  <div id="admin-page" class="admin-shell hidden">
+
+    <!-- Thanh bên trái -->
+    <aside class="admin-aside desk">
+      <button class="admin-brand" onclick="location.href='index.html'">
+        <span class="font-display" style="font-size:20px;letter-spacing:.16em">CỎ THƠM</span>
+        <small>Quản trị cửa hàng</small>
+      </button>
+      <nav class="admin-nav">
+        <p>Không gian làm việc</p>
+        <button data-tab="overview" onclick="showTab('overview')">Tổng quan</button>
+        <button data-tab="customers" onclick="showTab('customers')">Khách hàng</button>
+        <button data-tab="types" onclick="showTab('types')">Loại sản phẩm</button>
+        <button data-tab="products" onclick="showTab('products')">Sản phẩm</button>
+        <button data-tab="receipts" onclick="showTab('receipts')">Nhập hàng</button>
+        <button data-tab="pricing" onclick="showTab('pricing')">Giá bán</button>
+        <button data-tab="orders" onclick="showTab('orders')">Đơn hàng</button>
+        <button data-tab="inventory" onclick="showTab('inventory')">Tồn kho</button>
+      </nav>
+      <div class="admin-user">
+        <p style="font-size:13px;margin-bottom:8px">An Nhiên · Quản trị viên</p>
+        <button class="btn-ghost" style="color:#ccc" onclick="adminLogout()">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <div class="admin-main">
+      <div class="admin-top">
+        <div><p class="kicker">Cỏ Thơm Admin</p><h1 id="page-title">Tổng quan cửa hàng</h1></div>
+      </div>
+
+      <!-- ===== TAB: TỔNG QUAN ===== -->
+      <section id="tab-overview" class="tab" data-title="Tổng quan cửa hàng">
+        <div class="stats">
+          <article class="stat"><p class="muted">Doanh thu đơn hiện có</p><h3 id="stat-revenue">0</h3><small class="muted">Không tính đơn đã hủy</small></article>
+          <article class="stat"><p class="muted">Đơn hàng</p><h3 id="stat-orders">0</h3><small class="muted"><span id="stat-shop-orders">0</span> đơn phát sinh trên cửa hàng</small></article>
+          <article class="stat"><p class="muted">Sản phẩm</p><h3 id="stat-products">0</h3><small class="muted">đang hiển thị</small></article>
+          <article class="stat"><p class="muted">Sắp hết hàng</p><h3 id="stat-low">0</h3><small class="muted">tồn ≤ mức cảnh báo</small></article>
+        </div>
+        <article class="stat" style="margin-top:18px">
+          <h2 class="font-display">Cảnh báo sắp hết hàng</h2>
+          <div class="table-wrap" style="margin-top:12px">
+            <table>
+              <thead><tr><th>Sản phẩm</th><th>Loại</th><th>Tồn kho</th><th>Mức cảnh báo</th><th>Cảnh báo</th></tr></thead>
+              <tbody id="overview-low-body"></tbody>
+            </table>
+          </div>
+        </article>
+        <h2 class="font-display" style="margin:18px 0 12px">Đơn hàng gần đây</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Ngày đặt</th><th>Tổng</th><th>Trạng thái</th><th></th></tr></thead>
+            <tbody id="overview-orders-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: KHÁCH HÀNG ===== -->
+      <section id="tab-customers" class="tab hidden" data-title="Khách hàng">
+        <div class="admin-filters">
+          <label>Tìm kiếm <input id="customers-search" placeholder="Tên, email, SĐT..." oninput="renderCustomers()"></label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mã</th><th>Tên khách hàng</th><th>Email / SĐT</th><th>Địa chỉ</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+            <tbody id="customers-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: LOẠI SẢN PHẨM ===== -->
+      <section id="tab-types" class="tab hidden" data-title="Loại sản phẩm">
+        <div class="admin-filters">
+          <label>Tìm kiếm <input id="types-search" placeholder="Tên loại..." oninput="renderCategories()"></label>
+          <button class="btn btn-dark" onclick="openCategoryForm(null)">+ Thêm loại</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Loại sản phẩm</th><th>Số sản phẩm</th><th>Hiển thị</th><th>Thao tác</th></tr></thead>
+            <tbody id="types-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: SẢN PHẨM ===== -->
+      <section id="tab-products" class="tab hidden" data-title="Sản phẩm">
+        <div class="admin-filters">
+          <label>Tìm kiếm <input id="products-search" placeholder="Tên, thương hiệu, SKU..." oninput="renderProducts()"></label>
+          <button class="btn btn-dark" onclick="openProductForm(null)">+ Thêm sản phẩm</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Hình</th><th>Sản phẩm</th><th>SKU</th><th>Danh mục</th><th>Giá bán</th><th>Tồn kho</th><th>Trạng thái</th><th></th></tr></thead>
+            <tbody id="products-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: NHẬP HÀNG ===== -->
+      <section id="tab-receipts" class="tab hidden" data-title="Phiếu nhập hàng">
+        <div class="admin-filters">
+          <label>Từ ngày
+            <span class="date-box">
+              <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+              <input type="date" id="receipts-from" onchange="showDate(this); renderReceipts()">
+            </span>
+          </label>
+          <label>Đến ngày
+            <span class="date-box">
+              <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+              <input type="date" id="receipts-to" onchange="showDate(this); renderReceipts()">
+            </span>
+          </label>
+          <label>Trạng thái
+            <select id="receipts-status" onchange="renderReceipts()">
+              <option value="">Tất cả trạng thái</option>
+              <option>Nháp</option>
+              <option>Hoàn thành</option>
+            </select>
+          </label>
+          <label>Tìm kiếm <input id="receipts-search" placeholder="Mã phiếu, sản phẩm..." oninput="renderReceipts()"></label>
+          <button class="btn-outline" onclick="clearFilters('receipts')">Xóa bộ lọc</button>
+          <button class="btn btn-dark" onclick="openReceiptForm(null)">+ Tạo phiếu nhập</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mã phiếu</th><th>Ngày nhập</th><th>Sản phẩm</th><th>Tổng số lượng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+            <tbody id="receipts-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: GIÁ BÁN ===== -->
+      <section id="tab-pricing" class="tab hidden" data-title="Quản lý giá bán">
+        <article class="stat">
+          <h2 class="font-display">% lợi nhuận theo loại sản phẩm</h2>
+          <form onsubmit="saveCategoryMargins(event)">
+            <div id="margin-grid" class="admin-margin-grid"></div>
+            <button class="btn btn-rose" type="submit" style="margin-top:12px">Lưu % theo loại</button>
+          </form>
+          <p class="muted" style="margin-top:8px">Giá bán = giá vốn × (1 + % lợi nhuận). Sản phẩm có % riêng thì dùng % riêng, còn lại dùng % của loại.</p>
+        </article>
+        <h2 class="font-display" style="margin:18px 0 10px">% lợi nhuận và giá bán theo sản phẩm</h2>
+        <div class="admin-filters">
+          <label>Loại sản phẩm
+            <select id="pricing-category" onchange="renderPricingTable()"><option value="">Tất cả loại</option></select>
+          </label>
+          <label>Tìm kiếm <input id="pricing-search" placeholder="Tên, SKU..." oninput="renderPricingTable()"></label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sản phẩm</th><th>Loại</th><th>Giá vốn</th><th>% lợi nhuận riêng</th><th>% áp dụng</th><th>Giá bán</th><th></th></tr></thead>
+            <tbody id="pricing-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: ĐƠN HÀNG ===== -->
+      <section id="tab-orders" class="tab hidden" data-title="Đơn hàng">
+        <div class="admin-filters">
+          <label>Từ ngày
+            <span class="date-box">
+              <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+              <input type="date" id="orders-from" onchange="showDate(this); renderOrders()">
+            </span>
+          </label>
+          <label>Đến ngày
+            <span class="date-box">
+              <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+              <input type="date" id="orders-to" onchange="showDate(this); renderOrders()">
+            </span>
+          </label>
+          <label>Trạng thái
+            <select id="orders-status" onchange="renderOrders()">
+              <option value="">Tất cả trạng thái</option>
+              <option>Mới đặt</option>
+              <option>Đã xử lý</option>
+              <option>Đã giao</option>
+              <option>Đã hủy</option>
+            </select>
+          </label>
+          <label>Tìm kiếm <input id="orders-search" placeholder="Mã đơn, khách hàng..." oninput="renderOrders()"></label>
+          <button class="btn-outline" onclick="clearFilters('orders')">Xóa bộ lọc</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Ngày đặt</th><th>Tổng</th><th>Trạng thái</th><th></th></tr></thead>
+            <tbody id="orders-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TAB: TỒN KHO ===== -->
+      <section id="tab-inventory" class="tab hidden" data-title="Tồn kho">
+        <div class="admin-filters">
+          <label>Loại sản phẩm
+            <select id="inventory-category" onchange="renderInventory()"><option value="">Tất cả loại</option></select>
+          </label>
+          <label>Từ ngày
+            <span class="date-box">
+              <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+              <input type="date" id="inventory-from" onchange="showDate(this); renderInventory()">
+            </span>
+          </label>
+          <label>Đến ngày
+            <span class="date-box">
+              <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+              <input type="date" id="inventory-to" onchange="showDate(this); renderInventory()">
+            </span>
+          </label>
+          <label>Tìm kiếm <input id="inventory-search" placeholder="Tên, SKU sản phẩm..." oninput="renderInventory()"></label>
+          <button class="btn-outline" onclick="clearFilters('inventory')">Xóa bộ lọc</button>
+        </div>
+
+        <div class="stats" style="margin:14px 0">
+          <article class="stat"><p class="muted">Sản phẩm theo bộ lọc</p><h3 id="stat-inventory-count">0</h3></article>
+          <article class="stat"><p class="muted">Tổng số lượng tồn</p><h3 id="stat-inventory-total">0</h3></article>
+          <article class="stat"><p class="muted">Sắp hết hàng</p><h3 id="stat-inventory-low">0</h3></article>
+        </div>
+
+        <article class="stat">
+          <h2 class="font-display">Cảnh báo sản phẩm sắp hết</h2>
+          <div class="table-wrap" style="margin-top:12px">
+            <table>
+              <thead><tr><th>Sản phẩm</th><th>Loại</th><th>Tồn kho</th><th>Mức cảnh báo</th><th>Cảnh báo</th></tr></thead>
+              <tbody id="inventory-low-body"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <h2 class="font-display" style="margin:18px 0 10px">Tồn kho theo loại tại một thời điểm</h2>
+        <div class="admin-filters">
+          <label>Tại ngày
+            <span class="date-box">
+              <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+              <input type="date" id="inventory-at" onchange="showDate(this); renderInventory()">
+            </span>
+          </label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sản phẩm</th><th>Loại</th><th>Tồn cuối ngày <span id="inventory-at-label"></span></th><th>Mức cảnh báo</th><th>Tình trạng</th></tr></thead>
+            <tbody id="inventory-at-body"></tbody>
+          </table>
+        </div>
+
+        <h2 class="font-display" style="margin:18px 0 10px">Nhập – xuất – tồn theo thời gian</h2>
+        <p class="muted" style="margin-bottom:10px">Chọn "Từ ngày" – "Đến ngày" ở bộ lọc phía trên. Gõ tên sản phẩm vào ô tìm kiếm để xem một sản phẩm.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sản phẩm</th><th>Loại</th><th>Tồn đầu kỳ</th><th>Nhập trong kỳ</th><th>Xuất trong kỳ</th><th>Tồn cuối kỳ</th></tr></thead>
+            <tbody id="inventory-summary-body"></tbody>
+          </table>
+        </div>
+
+        <h3 class="font-display" style="margin:18px 0 10px">Chi tiết giao dịch kho</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ngày</th><th>Sản phẩm</th><th>Loại giao dịch</th><th>Số lượng</th><th>Mã tham chiếu</th></tr></thead>
+            <tbody id="inventory-movements-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===== CỬA SỔ: THÊM / SỬA SẢN PHẨM ===== -->
+  <div id="product-modal" class="overlay hidden" onclick="if (event.target === this) closeModal('product-modal')">
+    <div class="modal wide">
+      <h2 class="font-display" id="product-title">Thêm sản phẩm</h2>
+      <form id="product-form" onsubmit="saveProduct(event)">
+        <div class="two-col">
+          <div class="field"><label>Tên sản phẩm</label><input name="name" required></div>
+          <div class="field"><label>Thương hiệu</label><input name="brand" required></div>
+          <div class="field"><label>Mã SKU</label><input name="sku" required></div>
+          <div class="field"><label>Loại sản phẩm</label><select name="category"></select></div>
+          <div class="field"><label>Giá vốn (VND)</label><input name="costPrice" type="number" min="0"></div>
+          <div class="field"><label>Biên lợi nhuận riêng (%)</label><input name="marginPercent" type="number" min="0" step="0.1" placeholder="Dùng mức mặc định của loại"></div>
+          <div class="field"><label>Giá bán (VND)</label><input name="price" readonly>
+            <small class="muted">Tự tính = giá vốn × (1 + % lợi nhuận) khi lưu.</small></div>
+          <div class="field"><label id="stock-label">Tồn kho ban đầu</label><input name="stock" type="number" min="0" required>
+            <small class="muted" id="stock-hint">Tồn kho chỉ thay đổi qua phiếu nhập và đơn hàng.</small></div>
+          <div class="field"><label>Mức cảnh báo tồn</label><input name="minStock" type="number" min="0" required>
+            <small class="muted">Tồn ≤ mức này sẽ báo "Sắp hết hàng".</small></div>
+        </div>
+        <div class="field"><label>Hình ảnh</label>
+          <input name="image" id="product-image" placeholder="Dán link ảnh hoặc chọn file bên dưới" required oninput="document.getElementById('image-preview').src = this.value">
+          <input type="file" accept="image/*" onchange="chooseProductImage(this)" style="margin-top:8px">
+          <img id="image-preview" class="admin-thumb-large" alt="">
+        </div>
+        <div class="field"><label>Mô tả</label><textarea name="description" rows="3"></textarea></div>
+        <div class="actions">
+          <button class="btn btn-rose" type="submit">Lưu sản phẩm</button>
+          <button class="btn-outline" type="button" onclick="closeModal('product-modal')">Hủy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== CỬA SỔ: THÊM / SỬA LOẠI SẢN PHẨM ===== -->
+  <div id="category-modal" class="overlay hidden" onclick="if (event.target === this) closeModal('category-modal')">
+    <div class="modal">
+      <h2 class="font-display" id="category-title">Thêm loại sản phẩm</h2>
+      <form id="category-form" onsubmit="saveCategory(event)">
+        <div class="field"><label>Tên loại</label><input name="label" required></div>
+        <div class="actions">
+          <button class="btn btn-rose" type="submit">Lưu</button>
+          <button class="btn-outline" type="button" onclick="closeModal('category-modal')">Hủy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== CỬA SỔ: TẠO / SỬA PHIẾU NHẬP ===== -->
+  <div id="receipt-modal" class="overlay hidden" onclick="if (event.target === this) closeModal('receipt-modal')">
+    <div class="modal wide">
+      <h2 class="font-display" id="receipt-title">Tạo phiếu nhập</h2>
+      <form id="receipt-form" onsubmit="saveReceipt(event)">
+        <div class="field"><label>Ngày nhập</label>
+          <span class="date-box">
+            <input type="text" readonly placeholder="dd/mm/yyyy" onclick="this.nextElementSibling.showPicker()">
+            <input type="date" id="receipt-date" name="date" onchange="showDate(this)">
+          </span>
+        </div>
+        <div id="receipt-lines"></div>
+        <button class="btn-outline" type="button" onclick="addReceiptLine()">+ Thêm sản phẩm</button>
+        <div class="actions">
+          <button class="btn btn-rose" type="submit">Lưu phiếu nháp</button>
+          <button class="btn-outline" type="button" onclick="closeModal('receipt-modal')">Hủy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== CỬA SỔ: CHI TIẾT ĐƠN HÀNG ===== -->
+  <div id="order-modal" class="overlay hidden" onclick="if (event.target === this) closeModal('order-modal')">
+    <div class="modal wide">
+      <div class="row-head">
+        <h2 class="font-display">Chi tiết đơn <span id="order-id"></span></h2>
+        <button class="btn-ghost" onclick="closeModal('order-modal')">Đóng</button>
+      </div>
+      <div class="two-col">
+        <div>
+          <p><b>Khách hàng:</b> <span id="order-customer"></span></p>
+          <p><b>Email:</b> <span id="order-email"></span></p>
+          <p><b>Số điện thoại:</b> <span id="order-phone"></span></p>
+          <p><b>Địa chỉ:</b> <span id="order-address"></span></p>
+        </div>
+        <div>
+          <p><b>Ngày đặt:</b> <span id="order-date"></span></p>
+          <p><b>Thanh toán:</b> <span id="order-payment"></span></p>
+          <p><b>Trạng thái:</b> <span id="order-status" class="status"></span></p>
+          <p><b>Tổng cộng:</b> <span id="order-total"></span></p>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:16px">
+        <table>
+          <thead><tr><th>Sản phẩm</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+          <tbody id="order-items-body"></tbody>
+        </table>
+      </div>
+      <div id="order-actions" class="admin-row-actions" style="margin-top:16px"></div>
+    </div>
+  </div>
+
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
   <script src="js/admin.js"></script>
