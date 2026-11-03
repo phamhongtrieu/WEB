@@ -1325,3 +1325,185 @@ h3 {
 .header-user { background: none; border: none; cursor: pointer; color: var(--medium); font-size: 13px; white-space: nowrap; }
 .header-user:hover { color: var(--rose); }
 @media (max-width: 799px) { .header-user { display: none; } }
+/* ===================================================
+   1. ĐIỆN THOẠI NHỎ & DỌC (Mobile: < 576px)
+   =================================================== */
+@media (max-width: 575px) {
+  body, html {
+    overflow-x: hidden; /* Chặn thanh cuộn ngang gây lệch trang */
+  }
+
+  /* 1. Sửa lỗi Logo vỡ đôi và thanh điều hướng header */
+  .site-header {
+    padding: 8px 12px;
+  }
+  .site-header .brand,
+  .site-header .logo {
+    white-space: nowrap; /* Không cho chữ CỎ THƠM bị rớt xuống 2 hàng */
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+  .site-header .actions,
+  .site-header .header-actions {
+    gap: 10px;
+  }
+
+  .hero {
+    height: 65vh;
+    min-height: 420px;
+  }
+  .hero h1 {
+    font-size: 28px;
+    line-height: 1.2;
+  }
+  .hero p {
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+  .cat-grid,
+  .product-grid,
+  .promise-grid {
+    grid-template-columns: 1fr; /* Xuống 1 cột trên điện thoại nhỏ */
+    gap: 12px;
+  }
+  .cart-item {
+    grid-template-columns: 70px 1fr;
+    gap: 10px;
+  }
+  .cart-item > div:last-child {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* 2. Sửa lỗi Footer bị lệch lề và tràn màn hình */
+  .site-footer {
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .foot-grid {
+    padding: 24px 16px 16px;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .site-footer p, 
+  .site-footer a, 
+  .foot-bottom {
+    word-break: break-word;
+    box-sizing: border-box;
+  }
+  .foot-bottom {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+    padding: 16px;
+  }
+
+  /* 3. Gom gọn ô nhập email và nút Gửi */
+  .news {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .news input {
+    width: 100%;
+    padding-right: 70px;
+    box-sizing: border-box;
+  }
+  .news button {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    bottom: 4px;
+    width: 60px;
+    border-radius: 99px;
+  }
+}
+
+/* ===================================================
+   2. TABLET / MÁY TÍNH BẢNG (576px - 991px)
+   =================================================== */
+@media (min-width: 576px) and (max-width: 991px) {
+  .wrap {
+    padding: 0 20px;
+  }
+  .hero h1 {
+    font-size: 42px;
+  }
+  .cat-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  .promise-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .foot-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 24px;
+    padding: 44px 20px 24px;
+  }
+}
+
+/* ===================================================
+   3. LAPTOP / DESKTOP TIÊU CHUẨN (992px - 1439px)
+   =================================================== */
+@media (min-width: 992px) and (max-width: 1439px) {
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .cat-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* ===================================================
+   4. MÀN HÌNH LỚN / TIVI (Large Screens & TV: >= 1440px)
+   =================================================== */
+@media (min-width: 1440px) {
+  :root {
+    --max: 1560px; /* Nới rộng container để web không bị lọt thỏm giữa tivi */
+  }
+  .hero {
+    height: 750px;
+  }
+  .hero h1 {
+    font-size: 72px;
+  }
+  .hero p {
+    font-size: 20px;
+    max-width: 520px;
+  }
+  .btn {
+    padding: 16px 34px;
+    font-size: 16px;
+  }
+  .card-body h3 {
+    font-size: 20px;
+  }
+  .price {
+    font-size: 18px;
+  }
+}
+
+/* Tivi 4K hoặc màn hình cực lớn (>= 2000px) */
+@media (min-width: 2000px) {
+  :root {
+    --max: 1800px;
+  }
+  body {
+    font-size: 18px;
+  }
+  .hero h1 {
+    font-size: 88px;
+  }
+}
