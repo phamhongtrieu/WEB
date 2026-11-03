@@ -86,10 +86,15 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
-.header-inner {
-  max-width: var(--max);
-  margin: 0 auto;
-  padding: 0 20px;
+.header-inner,
+.site-header .wrap {
+  width: 100%;
+  max-width: var(--max, 1200px);
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
   height: 68px;
   display: flex;
   align-items: center;
@@ -269,9 +274,13 @@ a {
 }
 
 .wrap {
-  max-width: var(--max);
-  margin: 0 auto;
-  padding: 0 20px;
+  width: 100%;
+  max-width: var(--max, 1200px);
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
 }
 
 .section {
@@ -764,7 +773,7 @@ h3 {
 .foot-grid {
   display: grid;
   gap: 32px;
-  padding: 56px 0 28px;
+  padding: 56px 20px 28px;
 }
 
 .site-footer h3 {
@@ -820,7 +829,7 @@ h3 {
 
 .foot-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 16px 0 28px;
+  padding: 16px 20px 28px;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.35);
   display: flex;
@@ -1471,7 +1480,7 @@ h3 {
    =================================================== */
 @media (min-width: 1440px) {
   :root {
-    --max: 1560px; /* Nới rộng container để web không bị lọt thỏm giữa tivi */
+    --max: 1320px;
   }
   .hero {
     height: 750px;
@@ -1498,7 +1507,7 @@ h3 {
 /* Tivi 4K hoặc màn hình cực lớn (>= 2000px) */
 @media (min-width: 2000px) {
   :root {
-    --max: 1800px;
+    --max: 1320px;
   }
   body {
     font-size: 18px;
