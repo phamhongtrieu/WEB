@@ -270,7 +270,7 @@ function renderModals() {
         <h2 class="font-display" id="auth-title">Chào mừng trở lại</h2>
         <p class="muted" id="auth-sub">Đăng nhập để theo dõi đơn hàng.</p>
         <form onsubmit="submitAuth(event)"novalidate>
-          <div class="field" id="name-field" style="display:none"><label>Họ tên</label><input name="name" placeholder="Nguyễn An"></div>
+          <div class="field" id="name-field" style="display:none"><label>Họ tên</label><input name="name" placeholder="Nguyễn An"><small class="auth-error" id="auth-name-error"></small></div>
           <div class="field"><label>Email</label><input name="email" type="email" required placeholder="ban@email.com"><small class="auth-error" id="auth-email-error"></small></div>
           <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="6"> <small class="auth-error" id="auth-password-error"></small></div>
           <button class="btn btn-rose" style="width:100%;margin-top:8px" type="submit">Tiếp tục</button>
@@ -347,24 +347,42 @@ function openAuth(mode) {
 function submitAuth(e) {
   e.preventDefault();
   const form = new FormData(e.target);
+  const inputName = (form.get("name") || "").toString().trim();
   const email = form.get("email").toString().trim().toLowerCase();
   const password = form.get("password").toString();
   // Lấy các ô nhập
+  const nameInput = e.target.elements.name;
   const emailInput = e.target.elements.email;
   const passwordInput = e.target.elements.password;
 
   // Lấy vùng hiển thị lỗi
+  const nameError = document.getElementById("auth-name-error");
   const emailError = document.getElementById("auth-email-error");
   const passwordError = document.getElementById("auth-password-error");
 
   // Xóa lỗi cũ
+  nameError.textContent = "";
   emailError.textContent = "";
   passwordError.textContent = "";
 
+  nameInput.classList.remove("auth-input-error");
   emailInput.classList.remove("auth-input-error");
   passwordInput.classList.remove("auth-input-error");
 
   let valid = true;
+
+  // Chỉ kiểm tra Họ tên khi đăng ký
+  if (window.__authMode === "register") {
+    if (!inputName) {
+      nameError.textContent = "Vui lòng nhập họ tên.";
+      nameInput.classList.add("auth-input-error");
+      valid = false;
+    } else if (inputName.length < 2) {
+      nameError.textContent = "Họ tên phải có ít nhất 2 ký tự.";
+      nameInput.classList.add("auth-input-error");
+      valid = false;
+    }
+  }
 
   // Kiểm tra Email
   if (!email) {
