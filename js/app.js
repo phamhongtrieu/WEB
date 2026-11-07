@@ -139,8 +139,8 @@ function productCard(p) {
       <img src="${p.images[0]}" alt="${p.name}">
       ${off ? `<span class="sale">-${off}%</span>` : ""}
       ${p.stock > 0
-        ? `<button class="quick-add" onclick="event.stopPropagation(); addToCart('${p.id}', 1)">+ Giỏ</button>`
-        : `<button class="quick-add" disabled onclick="event.stopPropagation()">Hết hàng</button>`}
+      ? `<button class="quick-add" onclick="event.stopPropagation(); addToCart('${p.id}', 1)">+ Giỏ</button>`
+      : `<button class="quick-add" disabled onclick="event.stopPropagation()">Hết hàng</button>`}
     </div>
     <div class="card-body" onclick="location.href='san-pham.html?id=${p.id}'">
       <div class="brand">${p.brand}</div>
@@ -177,7 +177,7 @@ function renderHeader(active) {
   host.innerHTML = `
     <div class="announce">MIỄN PHÍ VẬN CHUYỂN CHO MỌI ĐƠN HÀNG TỪ 600.000₫</div>
     <header class="site-header">
-      <div class="header-inner">
+      <div class="header-inner wrap">
         <button class="icon-btn menu-btn" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
         <button class="logo" onclick="location.href='index.html'">CỎ THƠM</button>
         <nav class="nav-desk">
@@ -269,10 +269,10 @@ function renderModals() {
         </div>
         <h2 class="font-display" id="auth-title">Chào mừng trở lại</h2>
         <p class="muted" id="auth-sub">Đăng nhập để theo dõi đơn hàng.</p>
-        <form onsubmit="submitAuth(event)">
+        <form onsubmit="submitAuth(event)"novalidate>
           <div class="field" id="name-field" style="display:none"><label>Họ tên</label><input name="name" placeholder="Nguyễn An"></div>
-          <div class="field"><label>Email</label><input name="email" type="email" required placeholder="ban@email.com"></div>
-          <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="6"></div>
+          <div class="field"><label>Email</label><input name="email" type="email" required placeholder="ban@email.com"><small class="auth-error" id="auth-email-error"></small></div>
+          <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="6"> <small class="auth-error" id="auth-password-error"></small></div>
           <button class="btn btn-rose" style="width:100%;margin-top:8px" type="submit">Tiếp tục</button>
         </form>
         <p class="muted" style="margin-top:12px;font-size:12px">Tài khoản demo được lưu trên trình duyệt này. Admin: admin.html</p>
@@ -349,6 +349,50 @@ function submitAuth(e) {
   const form = new FormData(e.target);
   const email = form.get("email").toString().trim().toLowerCase();
   const password = form.get("password").toString();
+  // Lấy các ô nhập
+  const emailInput = e.target.elements.email;
+  const passwordInput = e.target.elements.password;
+
+  // Lấy vùng hiển thị lỗi
+  const emailError = document.getElementById("auth-email-error");
+  const passwordError = document.getElementById("auth-password-error");
+
+  // Xóa lỗi cũ
+  emailError.textContent = "";
+  passwordError.textContent = "";
+
+  emailInput.classList.remove("auth-input-error");
+  passwordInput.classList.remove("auth-input-error");
+
+  let valid = true;
+
+  // Kiểm tra Email
+  if (!email) {
+    emailError.textContent = "Vui lòng nhập Email.";
+    emailInput.classList.add("auth-input-error");
+    valid = false;
+  } else if (!/^[^\s@]+@[^\s@]+$/.test(email)) {
+    emailError.textContent = "Email không đúng định dạng.";
+    emailInput.classList.add("auth-input-error");
+    valid = false;
+  }
+
+  // Kiểm tra mật khẩu
+  if (!password) {
+    passwordError.textContent = "Vui lòng nhập mật khẩu.";
+    passwordInput.classList.add("auth-input-error");
+    valid = false;
+  } else if (
+    window.__authMode === "register" &&
+    password.length < 6
+  ) {
+    passwordError.textContent = "Mật khẩu phải có ít nhất 6 ký tự.";
+    passwordInput.classList.add("auth-input-error");
+    valid = false;
+  }
+
+  // Nếu có lỗi thì dừng
+  if (!valid) return;
   const isRegister = window.__authMode === "register";
   const accounts = readStored(KEYS.customerAccounts, []);
   const existing = accounts.find((account) => account.email === email);
